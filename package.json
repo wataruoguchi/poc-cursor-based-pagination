@@ -1,0 +1,30 @@
+{
+  "name": "poc-cursor-based-pagination",
+  "private": true,
+  "scripts": {
+    "format": "biome format --write .",
+    "lint": "biome lint --write .",
+    "test": "pnpm --filter '*' test",
+    "dev": "concurrently --kill-others \"pnpm --filter backend dev\" \"pnpm --filter frontend dev\"",
+    "prepare": "husky"
+  },
+  "keywords": [],
+  "author": "Wataru Oguchi <wataru.oguchi.0to1@gmail.com>",
+  "license": "MIT",
+  "workspaces": [
+    "apps/*"
+  ],
+  "packageManager": "pnpm@8.6.10+sha1.98fe2755061026799bfa30e7dc8d6d48e9c3edf0",
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "concurrently": "^9.1.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2"
+  },
+  "lint-staged": {
+    "*.{js,ts,jsx,tsx}": [
+      "biome format --write",
+      "biome lint --write"
+    ]
+  }
+}
