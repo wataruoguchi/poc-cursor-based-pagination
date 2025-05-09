@@ -101,7 +101,7 @@ cp .env.example .env
 3. Run database migrations:
 
 ```bash
-pnpm migrate up
+npx kysely-ctl migrate:latest
 ```
 
 4. Start development server:
