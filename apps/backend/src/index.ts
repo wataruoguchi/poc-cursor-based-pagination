@@ -11,6 +11,7 @@ const db = getDB();
 const userRepository = createUserRepository(db, logger);
 
 app.route("/api", createUserController(userRepository, logger));
+app.get("/", (c) => c.json({ message: "Hello, World!" }));
 
 serve(
   {
