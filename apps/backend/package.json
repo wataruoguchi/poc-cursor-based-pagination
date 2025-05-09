@@ -4,14 +4,23 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "generate:db-types": "kysely-codegen --out=./src/shared/infrastructure/types.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.14.1",
-    "hono": "^4.7.8"
+    "hono": "^4.7.8",
+    "kysely": "^0.28.2",
+    "kysely-postgres-js": "^2.0.0",
+    "pino": "^9.6.0",
+    "postgres": "^3.4.5",
+    "zod": "^3.24.4"
   },
   "devDependencies": {
     "@types/node": "^20.11.17",
+    "kysely-codegen": "^0.18.3",
+    "kysely-ctl": "^0.12.2",
+    "pg": "^8.15.6",
     "tsx": "^4.7.1",
     "typescript": "^5.8.3"
   }
