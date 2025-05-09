@@ -25,7 +25,7 @@
   },
   "overrides": [
     {
-      "include": ["db/migrations/**/*.ts"],
+      "include": ["db/**/*.ts"],
       "linter": {
         "rules": {
           "suspicious": {

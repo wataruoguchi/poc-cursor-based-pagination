@@ -12,7 +12,7 @@ export const createUserRepository = (
 ): UserRepository => ({
   findAll: async function findAll() {
     logger.info("Repository: Getting all users");
-    const users = await db.selectFrom("user").selectAll().execute();
+    const users = await db.selectFrom("person").selectAll().execute();
     const userEntities = users.map((user) =>
       userSchema.parse({ ...user, createdAt: user.created_at }),
     );
