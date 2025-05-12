@@ -1,24 +1,32 @@
 import { serve } from "@hono/node-server";
-import { Hono } from "hono";
-import { getDB } from "./infrastructure/database.js";
-import { createLogger } from "./infrastructure/logger.js";
-import { createUserRepository } from "./modules/user/infrastructure/repository.js";
-import { createUserController } from "./modules/user/interfaces/user-controller.js";
+import app from "./app";
 
-const logger = createLogger("our-backend");
-const app = new Hono();
-const db = getDB();
-const userRepository = createUserRepository(db, logger);
+const portStr = process.env.PORT;
+if (!portStr) {
+  throw new Error("PORT is not set");
+}
+const port = Number.parseInt(portStr);
 
-app.route("/api", createUserController(userRepository, logger));
-app.get("/", (c) => c.json({ message: "Hello, World!" }));
-
-serve(
+const server = serve(
   {
     fetch: app.fetch,
-    port: 3000,
+    port,
   },
   (info) => {
-    logger.info(`Server is running on http://localhost:${info.port}`);
+    console.log(`Server is running on port ${info.port}`);
   },
 );
+
+process.on("SIGINT", () => {
+  server.close();
+  process.exit(0);
+});
+process.on("SIGTERM", () => {
+  server.close((err) => {
+    if (err) {
+      console.error(err);
+      process.exit(1);
+    }
+    process.exit(0);
+  });
+});

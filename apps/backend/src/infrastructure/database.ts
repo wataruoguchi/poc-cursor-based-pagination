@@ -15,9 +15,15 @@ export const dialect = new PostgresJSDialect({
   postgres: sql,
 });
 
-const db = new Kysely<DB>({
-  dialect,
-});
+export function connectDb(name?: string): DBClient {
+  return new Kysely<DB>({
+    dialect: new PostgresJSDialect({
+      postgres: sql,
+      ...(name ? { database: name } : {}),
+    }),
+  });
+}
+export type DBClient = Kysely<DB>;
 
-export type DBClient = typeof db;
-export const getDB = (): DBClient => db;
+const db = connectDb();
+export const getDb = (): DBClient => db;
