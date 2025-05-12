@@ -1,6 +1,7 @@
 import type { Logger } from "@/infrastructure/logger";
 import type { User } from "@/modules/user/domain/entity";
-import type { UserRepository } from "@/modules/user/domain/repository.type";
+import { userSchema } from "@/modules/user/domain/entity";
+import type { UserRepository } from "../infrastructure/repository";
 
 export type UserUseCases = ReturnType<typeof userUseCases>;
 export const userUseCases = (
@@ -9,11 +10,23 @@ export const userUseCases = (
 ) => ({
   getAllUsers: async (): Promise<User[]> => {
     logger.info("Usecase: Getting all users");
-    return userRepository.findAll();
+    const users = await userRepository.findAll();
+    return users.map((user) =>
+      userSchema.parse({
+        ...user,
+        createdAt: user.created_at,
+      }),
+    );
   },
   getUserById: async (id: string): Promise<User | null> => {
     logger.info("Usecase: Getting user by id", { id });
-    return userRepository.findById(id);
+    const user = await userRepository.findById(id);
+    return user
+      ? userSchema.parse({
+          ...user,
+          createdAt: user.created_at,
+        })
+      : null;
   },
 });
 

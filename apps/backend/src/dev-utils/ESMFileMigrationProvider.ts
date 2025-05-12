@@ -15,6 +15,7 @@ export class ESMFileMigrationProvider implements MigrationProvider {
     if (files.length === 0) {
       throw new Error(`No migrations found in ${resolvedPath}`);
     }
+    console.log(`Found ${files.length} migrations in ${resolvedPath}`);
 
     for (const fileName of files) {
       const importPath = path

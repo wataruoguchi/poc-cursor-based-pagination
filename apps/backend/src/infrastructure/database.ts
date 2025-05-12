@@ -18,8 +18,13 @@ export const dialect = new PostgresJSDialect({
 export function connectDb(name?: string): DBClient {
   return new Kysely<DB>({
     dialect: new PostgresJSDialect({
-      postgres: sql,
-      ...(name ? { database: name } : {}),
+      postgres: postgres({
+        host: process.env.PGHOST,
+        port: Number(process.env.PGPORT),
+        database: name ?? process.env.PGDATABASE,
+        username: process.env.PGUSER,
+        password: process.env.PGPASSWORD,
+      }),
     }),
   });
 }

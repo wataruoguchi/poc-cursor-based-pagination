@@ -5,18 +5,33 @@
 ```
 src/
 ├── index.ts         # Application entry point
+├── app.ts          # Application setup and module composition
+├── app.spec.ts     # Integration tests
 ├── infrastructure/  # Shared infrastructure setup
-└── modules/         # Feature modules
-    └── user/        # User module
+│   ├── database.ts # Database connection and client setup
+│   └── logger.ts   # Logging configuration
+├── dev-utils/      # Development and testing utilities
+│   ├── dev-db.ts   # Test database setup
+│   └── mocks/      # Test data seeding
+└── modules/        # Feature modules
+    ├── user/       # User module
+    │   ├── domain/           # Core business logic
+    │   │   ├── entity.ts     # Domain entities and value objects
+    │   ├── application/      # Application services
+    │   │   └── user-use-cases.ts  # Use case implementations
+    │   ├── infrastructure/   # DB I/O
+    │   │   └── repository.ts  # Repository implementations
+    │   └── interfaces/       # HTTP I/O
+    │       └── user-controller.ts  # API endpoints
+    └── order/      # Order module (Shopping Cart)
         ├── domain/           # Core business logic
-        │   ├── entity.ts     # Domain entities and value objects
-        │   └── repository.type.ts  # Repository interface definitions
+        │   ├── shopping-cart.ts     # Domain entities and value objects
         ├── application/      # Application services
-        │   └── use-cases.ts  # Use case implementations
+        │   └── order-use-cases.ts  # Use case implementations
         ├── infrastructure/   # DB I/O
-        │   └── repository  # Repository implementations
+        │   └── shopping-cart-repository.ts
         └── interfaces/       # HTTP I/O
-            └── user-controller.ts  # API endpoints
+            └── order-controller.ts  # API endpoints
 ```
 
 ### Why This Structure?
@@ -25,64 +40,45 @@ src/
    - Each feature is encapsulated in its own module
    - Modules are independent and can evolve separately
    - Clear boundaries between different parts of the system
-   - Easier to maintain and scale
+   - Cross-module communication through use case types only
 
-2. **Domain Layer** (`domain/`)
-   - Contains core business logic and rules
-   - Defines entities and value objects using Zod schemas
-   - Repository interfaces (`repository.type.ts`) define the contract for data access
-   - Pure business logic, independent of infrastructure concerns
+### Layers
 
-3. **Application Layer** (`application/`)
-   - Orchestrates use cases
-   - Coordinates between domain and infrastructure
-   - Implements application-specific business rules
-   - Uses repository interfaces from domain layer
+1. **Domain Layer** (`modules/<moduleName>/domain/`)
 
-4. **Infrastructure Layer** (`infrastructure/`)
-   - Implements technical capabilities
-   - Contains repository implementations that fulfill domain interfaces
-   - Handles database connections using Kysely
-   - Keeps technical details isolated from domain logic
+   - It should not depend on other layers.
+   - All the business logics, entities, value objects, etc. are found here.
 
-5. **Interface Layer** (`interfaces/`)
-   - Handles external communication
-   - Controllers manage HTTP requests/responses
-   - Transforms external data into domain models
-   - Protects domain from external concerns
+1. **Application Layer** (`modules/<moduleName>/application/`)
 
-### Repository Pattern Implementation
+   - It can depend on the Domain layer.
+   - The layer can be depended by other domains.
+     - e.g., `order-use-cases.ts` uses `getUserById` from user domain's application layer
 
-The repository pattern is implemented using a type-first approach:
+1. **Infrastructure Layer** (`modules/<moduleName>/infrastructure/`)
 
-1. **Domain Layer** (`repository.type.ts`):
+   - It should not depend on other layers.
+   - This is the only module communicates with the DB.
 
-   ```typescript
-   // Defines the contract for data access
-   export type UserRepository = {
-     findAll: () => Promise<User[]>;
-     // ... other methods
-   };
-   ```
+1. **Interface Layer** (`modules/<moduleName>/interfaces/`)
 
-2. **Infrastructure Layer** (`repository.ts`):
+   - It depends on the Application layer.
+   - This is the only module communicates with the rest of the world (via Web API).
 
-   ```typescript
-   // Implements the contract using Kysely
-   export const createUserRepository = (db: Database): UserRepository => ({
-     findAll: async () => {
-       // Implementation using Kysely
-     },
-     // ... other methods
-   });
-   ```
+### Testing Strategy
 
-This approach provides several benefits:
+The project uses Vitest for testing with the following approach:
 
-- Clear separation between interface and implementation
-- Easy to swap implementations (e.g., for testing)
-- Domain layer remains pure and technology-agnostic
-- Type safety across the application
+1. **Test Database**
+   - Each test suite gets its own isolated database instance
+   - Test data is seeded using the `dev-utils/mocks/seed.ts` utilities
+   - Database is cleaned up after tests complete
+
+2. **Integration Tests**
+   - Tests are written at the API level using Hono's request API
+   - Tests verify complete request/response cycles
+   - No mocking of internal modules, ensuring real integration testing
+   - Tests are co-located with the code they test
 
 ## Setup
 
@@ -92,25 +88,25 @@ This approach provides several benefits:
 pnpm install
 ```
 
-2. Set up environment variables:
-
-```bash
-cp .env.example .env
-```
-
-3. Run database migrations:
+2. Run database migrations:
 
 ```bash
 npx kysely-ctl migrate:latest
 ```
 
-4. Start development server:
+3. Start development server:
 
 ```bash
 pnpm dev
 ```
 
-The API will be available at http://localhost:3000/api
+4. Run tests:
+
+```bash
+pnpm test
+```
+
+The API will be available at http://localhost:3000
 
 ```bash
 open http://localhost:3000

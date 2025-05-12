@@ -5,13 +5,8 @@ import process from "node:process";
 import { defineConfig } from "vite";
 import tsConfigPaths from "vite-tsconfig-paths";
 
-const portStr = process.env.PORT;
-if (!portStr) {
-  throw new Error("PORT is not set");
-}
-const port = Number.parseInt(portStr);
-
-export default defineConfig(({ command }) => {
+export default defineConfig(({ command, mode }) => {
+  const port = mode === "test" ? 3000 : getPort();
   const defaultConfig = {
     plugins: [tsConfigPaths()],
   };
@@ -21,7 +16,7 @@ export default defineConfig(({ command }) => {
       plugins: [
         tsConfigPaths(),
         build({
-          entry: "./src/app.ts",
+          entry: "./src/index.ts",
           port,
         }),
       ],
@@ -33,11 +28,23 @@ export default defineConfig(({ command }) => {
       tsConfigPaths(),
       devServer({
         adapter: nodeAdapter,
-        entry: "./src/app.ts",
+        entry: "./src/index.ts",
       }),
     ],
     server: {
       port,
     },
+    test: {
+      globals: true,
+      environment: "node",
+    },
   };
 });
+
+const getPort = () => {
+  const portStr = process.env.PORT;
+  if (!portStr) {
+    throw new Error("PORT is not set");
+  }
+  return Number.parseInt(portStr);
+};

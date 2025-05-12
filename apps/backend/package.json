@@ -5,7 +5,8 @@
     "dev": "PORT=3000 vite --host",
     "build": "PORT=3000 vite build",
     "start": "node dist/index.js",
-    "codegen": "dotenv -e .env.development -- kysely-codegen"
+    "codegen": "dotenv -e .env.development -- kysely-codegen",
+    "test": "vitest"
   },
   "dependencies": {
     "@hono/node-server": "^1.14.1",
@@ -28,6 +29,7 @@
     "pg": "^8.15.6",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
-    "vite-tsconfig-paths": "^5.1.4"
+    "vite-tsconfig-paths": "^5.1.4",
+    "vitest": "^3.1.3"
   }
 }

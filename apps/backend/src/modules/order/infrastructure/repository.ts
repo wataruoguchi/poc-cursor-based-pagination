@@ -1,7 +1,8 @@
+/**
+ * This file should not know about domain logic. It should only know about the database.
+ */
 import type { DBClient } from "@/infrastructure/database";
 import type { Logger } from "@/infrastructure/logger";
-import { shoppingCartSchema } from "@/modules/order/domain/shopping-cart";
-import type { ShoppingCartRepository } from "@/modules/order/domain/shopping-cart-repository.type";
 import { sql } from "kysely";
 
 /**
@@ -9,57 +10,63 @@ import { sql } from "kysely";
  * - A user can have only one shopping cart opened at a time.
  * - Only the latest shopping cart can have the status "Opened". The others are "Closed".
  */
-export const createShoppingCartRepository = (
-  db: DBClient,
-  logger: Logger,
-): ShoppingCartRepository => ({
+export type ShoppingCartRepository = ReturnType<
+  typeof createShoppingCartRepository
+>;
+export const createShoppingCartRepository = (db: DBClient, logger: Logger) => ({
   findByUserIdOrCreate: async (userId: string) => {
     logger.info("findByUserId", { userId });
+    const latestCartSubquery = db
+      .selectFrom("shopping_cart")
+      .selectAll()
+      .where("person_id", "=", userId)
+      .orderBy("created_at", "desc")
+      .limit(1)
+      .as("s");
+
+    const cartItemsSubquery = db
+      .selectFrom("shopping_cart_item")
+      .select([
+        "shopping_cart_id",
+        "product_id",
+        (eb) => eb.fn.countAll().as("quantity"),
+      ])
+      .groupBy(["shopping_cart_id", "product_id"])
+      .as("sci");
+
     const records = await db
-      .selectFrom("shopping_cart as s")
-      .innerJoin("shopping_cart_item as sci", "s.id", "sci.shopping_cart_id")
-      .innerJoin("product as p", "sci.product_id", "p.id")
+      .selectFrom(latestCartSubquery)
+      .leftJoin(cartItemsSubquery, "s.id", "sci.shopping_cart_id")
+      .leftJoin("product as p", "sci.product_id", "p.id")
       .select([
         "s.id",
         "s.person_id",
         "s.status",
         "p.id as product_id",
         "p.product_name",
-        (eb) => eb.fn.countAll().as("quantity"),
+        "sci.quantity",
       ])
-      .where("s.person_id", "=", userId)
-      .orderBy("s.created_at", "desc")
-      .groupBy(["s.id", "s.person_id", "s.status", "p.id", "p.product_name"])
       .execute();
 
-    if (records.length === 0) {
-      logger.info("No shopping cart found, creating new one", { userId });
-      const createdCart = await db
-        .insertInto("shopping_cart")
-        .values({
-          person_id: userId,
-        })
-        .returning(["id", "person_id", "status"])
-        .executeTakeFirstOrThrow();
+    if (records.length > 0) return records;
 
-      return shoppingCartSchema.parse({
+    // If no shopping cart is found, create a new one
+    logger.info("No shopping cart found, creating new one", { userId });
+    const createdCart = await db
+      .insertInto("shopping_cart")
+      .values({
+        person_id: userId,
+      })
+      .returning(["id", "person_id", "status"])
+      .executeTakeFirstOrThrow();
+    return [
+      {
         ...createdCart,
-        userId: createdCart.person_id,
-        items: [],
-      });
-    }
-
-    const shoppingCart = records[0];
-
-    return shoppingCartSchema.parse({
-      ...shoppingCart,
-      userId: shoppingCart.person_id,
-      items: records.map((record) => ({
-        productId: record.product_id,
-        productName: record.product_name,
-        quantity: record.quantity,
-      })),
-    });
+        product_id: null,
+        product_name: null,
+        quantity: 0,
+      },
+    ];
   },
   addItem: async (userId: string, itemId: string) => {
     logger.info("addItem", { userId, itemId });

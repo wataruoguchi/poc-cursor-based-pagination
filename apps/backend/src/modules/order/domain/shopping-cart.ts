@@ -8,7 +8,7 @@ export const shoppingCartSchema = z.object({
     z.object({
       productId: z.string().uuid(),
       productName: z.string(),
-      quantity: z.number(),
+      quantity: z.coerce.number(),
     }),
   ),
 });
