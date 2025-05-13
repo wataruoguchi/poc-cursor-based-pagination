@@ -1,6 +1,6 @@
 import type { Logger } from "@/infrastructure/logger";
 import { Hono } from "hono";
-import type { UserUseCases } from "../application/user-use-cases";
+import type { UserUseCases } from "../application/user.usecases";
 
 export const createUserController = (
   useCases: Pick<UserUseCases, "getAllUsers">,

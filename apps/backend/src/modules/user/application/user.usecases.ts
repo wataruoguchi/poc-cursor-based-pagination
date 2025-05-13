@@ -1,7 +1,7 @@
 import type { Logger } from "@/infrastructure/logger";
-import type { User } from "@/modules/user/domain/entity";
-import { userSchema } from "@/modules/user/domain/entity";
-import type { UserRepository } from "../infrastructure/repository";
+import type { User } from "@/modules/user/domain/user.entity";
+import { userSchema } from "@/modules/user/domain/user.entity";
+import type { UserRepository } from "../infrastructure/user.repository";
 
 export type UserUseCases = ReturnType<typeof userUseCases>;
 export const userUseCases = (

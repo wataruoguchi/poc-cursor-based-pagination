@@ -1,11 +1,11 @@
 import type { DBClient } from "@/infrastructure/database";
 import { createLogger } from "@/infrastructure/logger";
-import { orderUseCases } from "@/modules/order/application/order-use-cases";
-import { createShoppingCartRepository } from "@/modules/order/infrastructure/repository";
-import { createOrderController } from "@/modules/order/interfaces/order-controller";
-import { userUseCases } from "@/modules/user/application/user-use-cases";
-import { createUserRepository } from "@/modules/user/infrastructure/repository";
-import { createUserController } from "@/modules/user/interfaces/user-controller";
+import { orderUseCases } from "@/modules/order/application/order.usecases";
+import { createShoppingCartRepository } from "@/modules/order/infrastructure/order.repository";
+import { createOrderController } from "@/modules/order/interfaces/order.controller";
+import { userUseCases } from "@/modules/user/application/user.usecases";
+import { createUserRepository } from "@/modules/user/infrastructure/user.repository";
+import { createUserController } from "@/modules/user/interfaces/user.controller";
 import { Hono } from "hono";
 
 const logger = createLogger("our-backend");

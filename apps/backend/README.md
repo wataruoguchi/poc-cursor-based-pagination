@@ -16,22 +16,22 @@ src/
 └── modules/        # Feature modules
     ├── user/       # User module
     │   ├── domain/           # Core business logic
-    │   │   ├── entity.ts     # Domain entities and value objects
+    │   │   ├── user.entity.ts     # Domain entities and value objects
     │   ├── application/      # Application services
-    │   │   └── user-use-cases.ts  # Use case implementations
+    │   │   └── user.usecases.ts  # Use case implementations
     │   ├── infrastructure/   # DB I/O
-    │   │   └── repository.ts  # Repository implementations
+    │   │   └── user.repository.ts  # Repository implementations
     │   └── interfaces/       # HTTP I/O
-    │       └── user-controller.ts  # API endpoints
+    │       └── user.controller.ts  # API endpoints
     └── order/      # Order module (Shopping Cart)
         ├── domain/           # Core business logic
-        │   ├── shopping-cart.ts     # Domain entities and value objects
+        │   ├── order.entity.ts     # Domain entities and value objects
         ├── application/      # Application services
-        │   └── order-use-cases.ts  # Use case implementations
+        │   └── order.usecases.ts  # Use case implementations
         ├── infrastructure/   # DB I/O
-        │   └── shopping-cart-repository.ts
+        │   └── order.repository.ts
         └── interfaces/       # HTTP I/O
-            └── order-controller.ts  # API endpoints
+            └── order.controller.ts  # API endpoints
 ```
 
 ### Why This Structure?

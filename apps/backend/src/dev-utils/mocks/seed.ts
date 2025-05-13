@@ -1,5 +1,5 @@
-import type { User } from "@/modules/user/domain/entity";
-import { userSchema } from "@/modules/user/domain/entity";
+import type { User } from "@/modules/user/domain/user.entity";
+import { userSchema } from "@/modules/user/domain/user.entity";
 import { faker } from "@faker-js/faker";
 import { z } from "zod";
 import type { DBClient } from "../dev-db";

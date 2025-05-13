@@ -2,7 +2,7 @@ import type { Hono } from "hono";
 import { getApp } from "./app";
 import { type DBClient, getTestDb } from "./dev-utils/dev-db";
 import { seedProducts, seedUsers } from "./dev-utils/mocks/seed";
-import type { User } from "./modules/user/domain/entity";
+import type { User } from "./modules/user/domain/user.entity";
 
 describe("app", () => {
   let testDb: DBClient;

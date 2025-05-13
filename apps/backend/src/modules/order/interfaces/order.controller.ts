@@ -1,6 +1,6 @@
 import type { Logger } from "@/infrastructure/logger";
 import { Hono } from "hono";
-import type { OrderUseCases } from "../application/order-use-cases";
+import type { OrderUseCases } from "../application/order.usecases";
 
 export const createOrderController = (
   useCases: OrderUseCases,

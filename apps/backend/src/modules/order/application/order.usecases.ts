@@ -2,9 +2,9 @@
  * This is where everything meets.
  */
 import type { Logger } from "@/infrastructure/logger";
-import type { GetUserById } from "@/modules/user/application/user-use-cases"; // User use cases are not part of the order module. We should not import the module directly.
-import { type ShoppingCart, shoppingCartSchema } from "../domain/shopping-cart";
-import type { ShoppingCartRepository } from "../infrastructure/repository";
+import type { GetUserById } from "@/modules/user/application/user.usecases"; // User use cases are not part of the order module. We should not import the module directly.
+import { type ShoppingCart, shoppingCartSchema } from "../domain/order.domain";
+import type { ShoppingCartRepository } from "../infrastructure/order.repository";
 
 export type OrderUseCases = ReturnType<typeof orderUseCases>;
 export const orderUseCases = (
