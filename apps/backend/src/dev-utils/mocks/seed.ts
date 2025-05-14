@@ -1,7 +1,8 @@
+import type { Product } from "@/modules/order/domain/order.domain";
+import { productSchema } from "@/modules/order/domain/order.domain";
 import type { User } from "@/modules/user/domain/user.entity";
 import { userSchema } from "@/modules/user/domain/user.entity";
 import { faker } from "@faker-js/faker";
-import { z } from "zod";
 import type { DBClient } from "../dev-db";
 export async function seedUsers(db: DBClient): Promise<User[]> {
   const users = await db
@@ -26,17 +27,11 @@ export async function seedUsers(db: DBClient): Promise<User[]> {
   );
 }
 
-const productSchema = z.object({
-  id: z.string(),
-  productName: z.string(),
-});
-type Product = z.infer<typeof productSchema>;
-
 export async function seedProducts(db: DBClient): Promise<Product[]> {
   const products = await db
     .insertInto("product")
     .values(
-      Array.from({ length: 10 }, () => ({
+      Array.from({ length: 105 }, () => ({
         id: faker.string.uuid(),
         product_name: faker.commerce.productName(),
       })),
@@ -47,7 +42,7 @@ export async function seedProducts(db: DBClient): Promise<Product[]> {
   return products.map((product) =>
     productSchema.parse({
       ...product,
-      productName: product.product_name,
+      name: product.product_name,
     }),
   );
 }
