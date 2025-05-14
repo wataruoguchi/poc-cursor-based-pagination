@@ -117,4 +117,10 @@ export const createShoppingCartRepository = (db: DBClient, logger: Logger) => ({
     logger.info("end closeCart", { result });
     return;
   },
+  findProducts: async () => {
+    logger.info("findProducts");
+    const result = await db.selectFrom("product").selectAll().execute();
+    logger.info("end findProducts", { result });
+    return result;
+  },
 });

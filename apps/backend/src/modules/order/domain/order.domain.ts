@@ -14,3 +14,10 @@ export const shoppingCartSchema = z.object({
 });
 
 export type ShoppingCart = z.infer<typeof shoppingCartSchema>;
+
+export const productSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+});
+
+export type Product = z.infer<typeof productSchema>;

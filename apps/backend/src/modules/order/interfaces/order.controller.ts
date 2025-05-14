@@ -40,5 +40,11 @@ export const createOrderController = (
     const shoppingCart = await useCases.closeCart(userId);
     return c.json(shoppingCart);
   });
+
+  app.get("/products", async (c) => {
+    logger.info("Getting products");
+    const products = await useCases.findProducts();
+    return c.json(products);
+  });
   return app;
 };

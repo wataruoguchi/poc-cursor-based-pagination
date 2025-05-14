@@ -33,6 +33,16 @@ describe("app", () => {
     });
 
     describe("shopping cart module", () => {
+      describe("GET /api/orders/products", () => {
+        test("should return all products", async () => {
+          const res = await app.request("/api/orders/products");
+          expect(res.status).toBe(200);
+          expect(await res.json()).toEqual(
+            JSON.parse(JSON.stringify(products)),
+          );
+        });
+      });
+
       describe("GET /api/orders/shopping-cart", () => {
         test("should return a shopping cart", async () => {
           const [user1] = users;
@@ -82,7 +92,7 @@ describe("app", () => {
               items: [
                 {
                   productId: product1.id,
-                  productName: product1.productName,
+                  productName: product1.name,
                   quantity,
                 },
               ],
@@ -121,7 +131,7 @@ describe("app", () => {
             items: [
               {
                 productId: product1.id,
-                productName: product1.productName,
+                productName: product1.name,
                 quantity: 1,
               },
             ],
@@ -157,7 +167,7 @@ describe("app", () => {
             items: [
               {
                 productId: product1.id,
-                productName: product1.productName,
+                productName: product1.name,
                 quantity: 1,
               },
             ],

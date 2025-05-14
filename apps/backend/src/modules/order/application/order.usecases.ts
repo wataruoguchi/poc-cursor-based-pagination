@@ -3,7 +3,12 @@
  */
 import type { Logger } from "@/infrastructure/logger";
 import type { GetUserById } from "@/modules/user/application/user.usecases"; // User use cases are not part of the order module. We should not import the module directly.
-import { type ShoppingCart, shoppingCartSchema } from "../domain/order.domain";
+import {
+  type Product,
+  type ShoppingCart,
+  productSchema,
+  shoppingCartSchema,
+} from "../domain/order.domain";
 import type { ShoppingCartRepository } from "../infrastructure/order.repository";
 
 export type OrderUseCases = ReturnType<typeof orderUseCases>;
@@ -57,6 +62,17 @@ export const orderUseCases = (
       shoppingCart: parseShoppingCart(shoppingCart),
       user,
     };
+  },
+  findProducts: async (): Promise<Product[]> => {
+    logger.info("start findProducts");
+    const products = await shoppingCartRepository.findProducts();
+    logger.info("end findProducts", { products });
+    return products.map((product) =>
+      productSchema.parse({
+        id: product.id,
+        name: product.product_name,
+      }),
+    );
   },
 });
 
