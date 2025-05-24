@@ -27,3 +27,5 @@ alias sup='git stash && gup && git stash pop'
 alias suppy='git stash && gup && gpu && git stash pop'
 alias gcp='git cherry-pick -x'
 alias gundo='git reset HEAD^'
+
+alias nr="npm run"

@@ -7,28 +7,41 @@ import { userUseCases } from "@/modules/user/application/user.usecases";
 import { createUserRepository } from "@/modules/user/infrastructure/user.repository";
 import { createUserController } from "@/modules/user/interfaces/user.controller";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { productUseCases } from "./modules/product/application/product.usecases";
+import { createProductRepository } from "./modules/product/infrastructure/product.repository";
+import { createProductController } from "./modules/product/interface/product.controller";
 
 const logger = createLogger("our-backend");
 /**
  * Loggers can be created for each module.
  */
-const loggerForUserUseCases = logger.child({
-  module: "usecase:user",
-});
-const loggerForOrderUseCases = logger.child({
-  module: "usecase:order",
+const loggerForUserController = logger.child({
+  module: "controller:user",
 });
 const loggerForUserRepository = logger.child({
   module: "repository:user",
 });
-const loggerForShoppingCartRepository = logger.child({
-  module: "repository:shopping-cart",
-});
-const loggerForUserController = logger.child({
-  module: "controller:user",
+const loggerForUserUseCases = logger.child({
+  module: "usecase:user",
 });
 const loggerForOrderController = logger.child({
   module: "controller:order",
+});
+const loggerForShoppingCartRepository = logger.child({
+  module: "repository:shopping-cart",
+});
+const loggerForOrderUseCases = logger.child({
+  module: "usecase:order",
+});
+const loggerForProductController = logger.child({
+  module: "controller:product",
+});
+const loggerForProductRepository = logger.child({
+  module: "repository:product",
+});
+const loggerForProductUseCases = logger.child({
+  module: "usecase:product",
 });
 
 export function getApp(db: DBClient) {
@@ -41,6 +54,7 @@ export function getApp(db: DBClient) {
   );
 
   const api = new Hono();
+  api.use("*", cors({ origin: "http://localhost:5173" }));
   api
     .route(
       "/users",
@@ -55,6 +69,16 @@ export function getApp(db: DBClient) {
           getUserById,
         ),
         loggerForOrderController,
+      ),
+    )
+    .route(
+      "/products",
+      createProductController(
+        productUseCases(
+          createProductRepository(db, loggerForProductRepository),
+          loggerForProductUseCases,
+        ),
+        loggerForProductController,
       ),
     );
 

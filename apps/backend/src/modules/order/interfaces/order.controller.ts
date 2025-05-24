@@ -41,10 +41,5 @@ export const createOrderController = (
     return c.json(shoppingCart);
   });
 
-  app.get("/products", async (c) => {
-    logger.info("Getting products");
-    const products = await useCases.findProducts();
-    return c.json(products);
-  });
   return app;
 };
