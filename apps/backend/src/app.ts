@@ -54,7 +54,7 @@ export function getApp(db: DBClient) {
   );
 
   const api = new Hono();
-  api.use("*", cors({ origin: "http://localhost:5173" }));
+  api.use("*", cors({ origin: "https://localhost:5173" }));
   api
     .route(
       "/users",
