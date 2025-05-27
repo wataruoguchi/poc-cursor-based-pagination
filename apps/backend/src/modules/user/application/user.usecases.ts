@@ -19,7 +19,7 @@ export const userUseCases = (
     );
   },
   getUserById: async (id: string): Promise<User | null> => {
-    logger.info("Usecase: Getting user by id", { id });
+    logger.info({ id }, "Usecase: Getting user by id");
     const user = await userRepository.findById(id);
     return user
       ? userSchema.parse({

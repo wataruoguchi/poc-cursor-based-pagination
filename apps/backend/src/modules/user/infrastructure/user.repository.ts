@@ -11,7 +11,7 @@ export const createUserRepository = (db: DBClient, logger: Logger) => ({
     return await db.selectFrom("person").selectAll().execute();
   },
   findById: async function findById(id: string) {
-    logger.info("Repository: Getting user by id", { id });
+    logger.info({ id }, "Repository: Getting user by id");
     return await db
       .selectFrom("person")
       .where("id", "=", id)

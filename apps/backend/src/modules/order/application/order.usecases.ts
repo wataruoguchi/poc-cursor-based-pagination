@@ -3,78 +3,70 @@
  */
 import type { Logger } from "@/infrastructure/logger";
 import type { GetUserById } from "@/modules/user/application/user.usecases"; // User use cases are not part of the order module. We should not import the module directly.
-import {
-  type Product,
-  type ShoppingCart,
-  productSchema,
-  shoppingCartSchema,
-} from "../domain/order.domain";
+import { type ShoppingCart, shoppingCartSchema } from "../domain/order.entity";
 import type { ShoppingCartRepository } from "../infrastructure/order.repository";
+
+type ProductRecord = {
+  id: string;
+  product_name: string;
+  created_at: Date;
+};
 
 export type OrderUseCases = ReturnType<typeof orderUseCases>;
 export const orderUseCases = (
   shoppingCartRepository: ShoppingCartRepository,
   logger: Logger,
   getUserById: GetUserById,
-) => ({
-  findShoppingCartByUserId: async (userId: string): Promise<ShoppingCart> => {
-    logger.info("start findShoppingCartByUserId", { userId });
-    const shoppingCart =
-      await shoppingCartRepository.findByUserIdOrCreate(userId);
-    logger.info("end findShoppingCartByUserId", { shoppingCart });
-    return parseShoppingCart(shoppingCart);
-  },
-  addItemToCart: async (
-    userId: string,
-    itemId: string,
-  ): Promise<ShoppingCart> => {
-    logger.info("start addItemToCart", { userId, itemId });
-    await shoppingCartRepository.addItem(userId, itemId);
-    const shoppingCart =
-      await shoppingCartRepository.findByUserIdOrCreate(userId);
-    logger.info("end addItemToCart", { shoppingCart });
-    return parseShoppingCart(shoppingCart);
-  },
-  removeItemFromCart: async (
-    userId: string,
-    itemId: string,
-  ): Promise<ShoppingCart> => {
-    logger.info("start removeItemFromCart", { userId, itemId });
-    await shoppingCartRepository.removeItem(userId, itemId);
-    const shoppingCart =
-      await shoppingCartRepository.findByUserIdOrCreate(userId);
-    logger.info("end removeItemFromCart", { shoppingCart });
-    return parseShoppingCart(shoppingCart);
-  },
-  closeCart: async (
-    userId: string,
-  ): Promise<{
-    shoppingCart: ShoppingCart;
-    user: Awaited<ReturnType<GetUserById>>;
-  }> => {
-    logger.info("start closeCart", { userId });
-    await shoppingCartRepository.closeCart(userId);
-    const shoppingCart =
-      await shoppingCartRepository.findByUserIdOrCreate(userId);
-    logger.info("end closeCart", { shoppingCart });
-    const user = await getUserById(userId);
-    return {
-      shoppingCart: parseShoppingCart(shoppingCart),
-      user,
-    };
-  },
-  findProducts: async (): Promise<Product[]> => {
-    logger.info("start findProducts");
-    const products = await shoppingCartRepository.findProducts();
-    logger.info("end findProducts", { products });
-    return products.map((product) =>
-      productSchema.parse({
-        id: product.id,
-        name: product.product_name,
-      }),
-    );
-  },
-});
+) => {
+  return {
+    findShoppingCartByUserId: async (userId: string): Promise<ShoppingCart> => {
+      logger.info({ userId }, "start findShoppingCartByUserId");
+      const shoppingCart =
+        await shoppingCartRepository.findByUserIdOrCreate(userId);
+      logger.info({ shoppingCart }, "end findShoppingCartByUserId");
+      return parseShoppingCart(shoppingCart);
+    },
+    addItemToCart: async (
+      userId: string,
+      itemId: string,
+    ): Promise<ShoppingCart> => {
+      logger.info({ userId, itemId }, "start addItemToCart");
+      await shoppingCartRepository.addItem(userId, itemId);
+      const shoppingCart =
+        await shoppingCartRepository.findByUserIdOrCreate(userId);
+      logger.info({ shoppingCart }, "end addItemToCart");
+      return parseShoppingCart(shoppingCart);
+    },
+    removeItemFromCart: async (
+      userId: string,
+      itemId: string,
+    ): Promise<ShoppingCart> => {
+      logger.info({ userId, itemId }, "start removeItemFromCart");
+      await shoppingCartRepository.removeItem(userId, itemId);
+      const shoppingCart =
+        await shoppingCartRepository.findByUserIdOrCreate(userId);
+      logger.info({ shoppingCart }, "end removeItemFromCart");
+      return parseShoppingCart(shoppingCart);
+    },
+    closeCart: async (
+      userId: string,
+    ): Promise<{
+      shoppingCart: ShoppingCart;
+      user: Awaited<ReturnType<GetUserById>>;
+    }> => {
+      logger.info({ userId }, "start closeCart");
+      await shoppingCartRepository.closeCart(userId);
+      const shoppingCart =
+        await shoppingCartRepository.findByUserIdOrCreate(userId);
+      logger.info({ shoppingCart }, "end closeCart");
+      const user = await getUserById(userId);
+      return {
+        shoppingCart: parseShoppingCart(shoppingCart),
+        user,
+      };
+    },
+  };
+};
 
 /**
  * Parses the shopping cart RAW data from the database to the domain model.

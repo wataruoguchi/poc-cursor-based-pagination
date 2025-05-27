@@ -3,6 +3,7 @@ import { getApp } from "./app";
 import { type DBClient, getTestDb } from "./dev-utils/dev-db";
 import { seedProducts, seedUsers } from "./dev-utils/mocks/seed";
 import type { User } from "./modules/user/domain/user.entity";
+import { decodeCursor, encodeCursor } from "./shared/utils/pagination";
 
 describe("app", () => {
   let testDb: DBClient;
@@ -32,10 +33,10 @@ describe("app", () => {
       });
     });
 
-    describe("shopping cart module", () => {
-      describe("GET /api/orders/products", () => {
+    describe("product module", () => {
+      describe("GET /api/products", () => {
         test("should return all products", async () => {
-          const res = await app.request("/api/orders/products");
+          const res = await app.request("/api/products");
           expect(res.status).toBe(200);
           expect(await res.json()).toEqual(
             JSON.parse(JSON.stringify(products)),
@@ -43,6 +44,88 @@ describe("app", () => {
         });
       });
 
+      describe("GET /api/products/paginated", () => {
+        let sortedProducts: typeof products;
+        beforeEach(() => {
+          sortedProducts = products.sort((a, b) => (a.id > b.id ? 1 : -1));
+        });
+
+        test("should return 200 without cursor", async () => {
+          const res = await app.request("/api/products/paginated");
+          expect(res.status).toBe(200);
+          const resJson = await res.json();
+          expect(resJson).toEqual({
+            data: sortedProducts.slice(0, 10),
+            meta: {
+              hasMore: true,
+              nextCursor: expect.any(String),
+              previousCursor: undefined,
+              totalRowCount: products.length,
+            },
+          });
+        });
+
+        test("should return 200 with invalid cursor", async () => {
+          // TODO: We should return 400 instead of 200
+          const res = await app.request(
+            "/api/products/paginated?cursor=invalid",
+          );
+          expect(res.status).toBe(200);
+          const resJson = await res.json();
+          expect(resJson).toEqual({
+            data: sortedProducts.slice(0, 10),
+            meta: {
+              hasMore: true,
+              nextCursor: expect.any(String),
+              previousCursor: expect.any(String),
+              totalRowCount: products.length,
+            },
+          });
+        });
+
+        test("should return 200 with valid cursor", async () => {
+          const LIMIT = 3;
+          const cursor = encodeCursor({
+            column: "id",
+            id: "",
+            limit: LIMIT,
+            direction: "next",
+            timestamp: Date.now(),
+            filters: {},
+            sortBy: "id",
+            sortOrder: "asc",
+            search: "",
+          });
+          const res = await app.request(
+            `/api/products/paginated?cursor=${cursor}`,
+          );
+          expect(res.status).toBe(200);
+          const resJson = await res.json();
+          const {
+            meta: { previousCursor, nextCursor },
+          } = resJson;
+
+          const decodedPreviousCursor = decodeCursor(previousCursor);
+          expect(decodedPreviousCursor.id).toEqual(sortedProducts[0].id);
+          const decodedNextCursor = decodeCursor(nextCursor);
+          expect(decodedNextCursor.id).toEqual(
+            sortedProducts[sortedProducts.slice(0, LIMIT).length - 1].id,
+          );
+
+          expect(resJson).toEqual({
+            data: sortedProducts.slice(0, LIMIT),
+            meta: {
+              hasMore: true,
+              nextCursor: expect.any(String),
+              previousCursor: expect.any(String),
+              totalRowCount: products.length,
+            },
+          });
+        });
+      });
+    });
+
+    describe("shopping cart module", () => {
       describe("GET /api/orders/shopping-cart", () => {
         test("should return a shopping cart", async () => {
           const [user1] = users;

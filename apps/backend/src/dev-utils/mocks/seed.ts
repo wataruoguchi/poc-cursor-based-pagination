@@ -1,5 +1,5 @@
-import type { Product } from "@/modules/order/domain/order.domain";
-import { productSchema } from "@/modules/order/domain/order.domain";
+import type { Product } from "@/modules/product/domain/product.entity";
+import { productSchema } from "@/modules/product/domain/product.entity";
 import type { User } from "@/modules/user/domain/user.entity";
 import { userSchema } from "@/modules/user/domain/user.entity";
 import { faker } from "@faker-js/faker";
