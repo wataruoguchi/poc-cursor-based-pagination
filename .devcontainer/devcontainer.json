@@ -15,7 +15,7 @@
 
   // Use 'postCreateCommand' to run commands after the container is created.
   "postCreateCommand": "echo 'source /workspaces/${localWorkspaceFolderBasename}/.bash_profile' >> ~/.bashrc",
-  "postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder} && git config --global core.editor 'vi'",
+  "postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder} && git config --global core.editor 'vi' && generate-certs.sh",
 
   // Configure tool-specific properties.
   "customizations": {

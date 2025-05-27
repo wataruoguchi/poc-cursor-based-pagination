@@ -7,6 +7,6 @@ export const FetchedProductsSchema = z.object({
 export type FetchedProducts = z.infer<typeof FetchedProductsSchema>;
 
 export const getApiEndpointPath =
-  "http://localhost:3000/api/products/paginated" as const;
+  "https://localhost:3000/api/products/paginated" as const;
 
 export const queryKeyToProducts = ["products"];

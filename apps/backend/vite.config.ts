@@ -1,6 +1,8 @@
 import build from "@hono/vite-build/node";
 import devServer from "@hono/vite-dev-server";
 import nodeAdapter from "@hono/vite-dev-server/node";
+import fs from "node:fs";
+import path from "node:path";
 import process from "node:process";
 import { defineConfig } from "vite";
 import tsConfigPaths from "vite-tsconfig-paths";
@@ -10,6 +12,21 @@ export default defineConfig(({ command, mode }) => {
   const defaultConfig = {
     plugins: [tsConfigPaths()],
   };
+
+  let httpsOptions: { key: Buffer; cert: Buffer } | undefined;
+  try {
+    httpsOptions = {
+      key: fs.readFileSync(
+        path.resolve(__dirname, "../../.certificates/localhost-key.pem"),
+      ),
+      cert: fs.readFileSync(
+        path.resolve(__dirname, "../../.certificates/localhost.pem"),
+      ),
+    };
+  } catch {
+    console.warn("HTTPS certificates not found, falling back to HTTP");
+  }
+
   if (command === "build") {
     return {
       ...defaultConfig,
@@ -33,6 +50,7 @@ export default defineConfig(({ command, mode }) => {
     ],
     server: {
       port,
+      ...(httpsOptions ? { https: httpsOptions } : {}),
     },
     test: {
       globals: true,
