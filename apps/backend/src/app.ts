@@ -3,6 +3,9 @@ import { createLogger } from "@/infrastructure/logger";
 import { orderUseCases } from "@/modules/order/application/order.usecases";
 import { createShoppingCartRepository } from "@/modules/order/infrastructure/order.repository";
 import { createOrderController } from "@/modules/order/interfaces/order.controller";
+import { organizationUseCases } from "@/modules/organization/application/organization.usecases";
+import { createOrganizationRepository } from "@/modules/organization/infrastructure/organization.repository";
+import { createOrganizationController } from "@/modules/organization/interfaces/organization.controller";
 import { userUseCases } from "@/modules/user/application/user.usecases";
 import { createUserRepository } from "@/modules/user/infrastructure/user.repository";
 import { createUserController } from "@/modules/user/interfaces/user.controller";
@@ -43,12 +46,21 @@ const loggerForProductRepository = logger.child({
 const loggerForProductUseCases = logger.child({
   module: "usecase:product",
 });
+const loggerForOrganizationController = logger.child({
+  module: "controller:organization",
+});
+const loggerForOrganizationRepository = logger.child({
+  module: "repository:organization",
+});
+const loggerForOrganizationUseCases = logger.child({
+  module: "usecase:organization",
+});
 
 export function getApp(db: DBClient) {
   /**
    * Cross-module example. getUserById is not part of the order module but the user module.
    */
-  const { getAllUsers, getUserById } = userUseCases(
+  const { getAllUsers, getUserById, inviteUser } = userUseCases(
     createUserRepository(db, loggerForUserRepository),
     loggerForUserUseCases,
   );
@@ -58,7 +70,10 @@ export function getApp(db: DBClient) {
   api
     .route(
       "/users",
-      createUserController({ getAllUsers }, loggerForUserController),
+      createUserController(
+        { getAllUsers, getUserById, inviteUser },
+        loggerForUserController,
+      ),
     )
     .route(
       "/orders",
@@ -79,6 +94,16 @@ export function getApp(db: DBClient) {
           loggerForProductUseCases,
         ),
         loggerForProductController,
+      ),
+    )
+    .route(
+      "/organizations",
+      createOrganizationController(
+        organizationUseCases(
+          createOrganizationRepository(db, loggerForOrganizationRepository),
+          loggerForOrganizationUseCases,
+        ),
+        loggerForOrganizationController,
       ),
     );
 

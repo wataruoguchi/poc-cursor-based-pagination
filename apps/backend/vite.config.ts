@@ -55,6 +55,14 @@ export default defineConfig(({ command, mode }) => {
     test: {
       globals: true,
       environment: "node",
+      env: {
+        AUTH0_DOMAIN: "test.auth0.com",
+        AUTH0_CLIENT_MANAGEMENT_ID: "test-management-client-id",
+        AUTH0_CLIENT_MANAGEMENT_SECRET: "test-management-client-secret",
+        AUTH0_CLIENT_ID: "test-client-id",
+        AUTH0_CONNECTION_ID: "test-connection-id",
+        PRIMARY_ORGANIZATION_ID: "org_1234567890",
+      },
     },
   };
 });

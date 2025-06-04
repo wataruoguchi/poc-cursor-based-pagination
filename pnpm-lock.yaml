@@ -29,6 +29,9 @@ importers:
       '@hono/node-server':
         specifier: ^1.14.1
         version: 1.14.1(hono@4.7.8)
+      '@hono/zod-openapi':
+        specifier: ^0.9.10
+        version: 0.9.10(hono@4.7.8)(zod@3.24.4)
       hono:
         specifier: ^4.7.8
         version: 4.7.8
@@ -38,6 +41,9 @@ importers:
       kysely-postgres-js:
         specifier: ^2.0.0
         version: 2.0.0(kysely@0.28.2)(postgres@3.4.5)
+      msw:
+        specifier: ^2.8.4
+        version: 2.8.4(@types/node@20.11.17)(typescript@5.8.3)
       pino:
         specifier: ^9.6.0
         version: 9.6.0
@@ -90,6 +96,9 @@ importers:
 
   apps/frontend:
     dependencies:
+      '@tanstack/react-form':
+        specifier: ^1.12.0
+        version: 1.12.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@tanstack/react-query':
         specifier: ^5.77.0
         version: 5.77.0(react@19.1.0)
@@ -168,6 +177,11 @@ packages:
 
   '@asamuzakjp/css-color@3.2.0':
     resolution: {integrity: sha512-K1A6z8tS3XsmCMM86xoWdn7Fkdn9m6RSVtocUrJYIwZnFVkng/PvkEoWtOWmP+Scc6saYWHWZYbndEEXxl24jw==}
+
+  '@asteasolutions/zod-to-openapi@5.5.0':
+    resolution: {integrity: sha512-d5HwrvM6dOKr3XdeF+DmashGvfEc+1oiEfbscugsiwSTrFtuMa7ETpW9sTNnVgn+hJaz+PRxPQUYD7q9/5dUig==}
+    peerDependencies:
+      zod: ^3.20.2
 
   '@babel/code-frame@7.27.1':
     resolution: {integrity: sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg==}
@@ -488,6 +502,19 @@ packages:
       wrangler:
         optional: true
 
+  '@hono/zod-openapi@0.9.10':
+    resolution: {integrity: sha512-v/b/z0qPxDo952gjRyhJ0n9ifbPoIluR2KmXDL20np0hj99+XvakoIHK5/T/3+hUmXlTj1Kn3TiGsSV6hwZesg==}
+    engines: {node: '>=16.0.0'}
+    peerDependencies:
+      hono: '>=3.11.3'
+      zod: 3.*
+
+  '@hono/zod-validator@0.2.1':
+    resolution: {integrity: sha512-HFoxln7Q6JsE64qz2WBS28SD33UB2alp3aRKmcWnNLDzEL1BLsWfbdX6e1HIiUprHYTIXf5y7ax8eYidKUwyaA==}
+    peerDependencies:
+      hono: '>=3.9.0'
+      zod: ^3.19.1
+
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
     engines: {node: '>=18.18.0'}
@@ -742,13 +769,34 @@ packages:
   '@swc/types@0.1.21':
     resolution: {integrity: sha512-2YEtj5HJVbKivud9N4bpPBAyZhj4S2Ipe5LkUG94alTpr7in/GU/EARgPAd3BwU+YOmFVJC2+kjqhGRi3r0ZpQ==}
 
+  '@tanstack/form-core@1.12.0':
+    resolution: {integrity: sha512-TfMUPHussIzopA4WOWDdt8WI0k7y4XiehGfdamtlHAqHqDcNCgsvou3cH5irA0XYm9GokIDXd/XRo4cHQVK5xw==}
+
   '@tanstack/query-core@5.77.0':
     resolution: {integrity: sha512-PFeWjgMQjOsnxBwnW/TJoO0pCja2dzuMQoZ3Diho7dPz7FnTUwTrjNmdf08evrhSE5nvPIKeqV6R0fvQfmhGeg==}
+
+  '@tanstack/react-form@1.12.0':
+    resolution: {integrity: sha512-0tZNbZ9BChA8cMYcdGlknC1XdcapU+HpD+1IwLt3QiAU/Gsp8unUYB5nZFPrwhZWKBzJY/tUwhtF6jlr2+psQg==}
+    peerDependencies:
+      '@tanstack/react-start': ^1.112.0
+      react: ^17.0.0 || ^18.0.0 || ^19.0.0
+      vinxi: ^0.5.0
+    peerDependenciesMeta:
+      '@tanstack/react-start':
+        optional: true
+      vinxi:
+        optional: true
 
   '@tanstack/react-query@5.77.0':
     resolution: {integrity: sha512-jX52ot8WxWzWnAknpRSEWj6PTR/7nkULOfoiaVPk6nKu0otwt30UMBC9PTg/m1x0uhz1g71/imwjViTm/oYHxA==}
     peerDependencies:
       react: ^18 || ^19
+
+  '@tanstack/react-store@0.7.1':
+    resolution: {integrity: sha512-qUTEKdId6QPWGiWyKAPf/gkN29scEsz6EUSJ0C3HgLMgaqTAyBsQ2sMCfGVcqb+kkhEXAdjleCgH6LAPD6f2sA==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   '@tanstack/react-table@8.21.3':
     resolution: {integrity: sha512-5nNMTSETP4ykGegmVkhjcS8tTLW6Vl4axfEGQN3v0zdHYbK4UfoqfPChclTrJ4EoK9QynqAu9oUf8VEmrpZ5Ww==}
@@ -762,6 +810,9 @@ packages:
     peerDependencies:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  '@tanstack/store@0.7.1':
+    resolution: {integrity: sha512-PjUQKXEXhLYj2X5/6c1Xn/0/qKY0IVFxTJweopRfF26xfjVyb14yALydJrHupDh3/d+1WKmfEgZPBVCmDkzzwg==}
 
   '@tanstack/table-core@8.21.3':
     resolution: {integrity: sha512-ldZXEhOBb8Is7xLs01fR3YEc3DERiz5silj8tnGkFZytt1abEvl/GhUmCE0PMLaMPTa3Jk4HbKmRlHmu+gCftg==}
@@ -1127,6 +1178,9 @@ packages:
   decimal.js@10.5.0:
     resolution: {integrity: sha512-8vDa8Qxvr/+d94hSh5P3IJwI5t8/c0KsMp+g8bNw9cY2icONa5aPfvKeieW1WlG0WQYwwhJ7mjui2xtiePQSXw==}
 
+  decode-formdata@0.9.0:
+    resolution: {integrity: sha512-q5uwOjR3Um5YD+ZWPOF/1sGHVW9A5rCrRwITQChRXlmPkxDFBqCm4jNTIVdGHNH9OnR+V9MoZVgRhsFb+ARbUw==}
+
   deep-eql@5.0.2:
     resolution: {integrity: sha512-h5k/5U50IJJFpzfL6nO9jaaumfjO/f2NjK/oYB2Djzm4p9L+3T9qWpZqZ2hAbLPuuYq9wrU08WQyBTL5GbPk5Q==}
     engines: {node: '>=6'}
@@ -1143,6 +1197,9 @@ packages:
 
   destr@2.0.5:
     resolution: {integrity: sha512-ugFTXCtDZunbzasqBxrK93Ik/DRYsO6S/fedkWEMKqt04xZ4csmnmwGDBAb07QWNaGMAmnTIemsYZCksjATwsA==}
+
+  devalue@5.1.1:
+    resolution: {integrity: sha512-maua5KUiapvEwiEAe+XnlZ3Rh0GD+qI1J/nb9vrJc3muPXvcF/8gXYTWF76+5DAqHyDUtOIImEuo0YKE9mshVw==}
 
   diff@3.5.0:
     resolution: {integrity: sha512-A46qtFgd+g7pDZinpnwiRJtxbC1hpgf0uzP3iG89scHk0AUC7A1TGxf5OiiOUv/JMZR8GOt8hL900hV0bOy5xA==}
@@ -1776,6 +1833,9 @@ packages:
     resolution: {integrity: sha512-VXJjc87FScF88uafS3JllDgvAm+c/Slfz06lorj2uAY34rlUu0Nt+v8wreiImcrgAjjIHp1rXpTDlLOGw29WwQ==}
     engines: {node: '>=18'}
 
+  openapi3-ts@4.4.0:
+    resolution: {integrity: sha512-9asTNB9IkKEzWMcHmVZE7Ts3kC9G7AFHfs8i7caD8HbI76gEjdkId4z/AkP83xdZsH7PLAnnbl47qZkXuxpArw==}
+
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
     engines: {node: '>= 0.8.0'}
@@ -2279,6 +2339,11 @@ packages:
   url-parse@1.5.10:
     resolution: {integrity: sha512-WypcfiRhfeUP9vvF0j6rw0J3hrWrw6iZv3+22h6iRMJ/8z1Tj6XfLP4DsUix5MhMPnXpiHDoKyoZ/bdCkwBCiQ==}
 
+  use-sync-external-store@1.5.0:
+    resolution: {integrity: sha512-Rb46I4cGGVBmjamjphe8L/UnvJD+uPPtTkNvX5mZgqdbavhI4EbgIWJiIHXJ8bc/i9EQGPRh4DwEURJ552Do0A==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
   vite-node@3.1.3:
     resolution: {integrity: sha512-uHV4plJ2IxCl4u1up1FQRrqclylKAogbtBfOTwcuJ28xFi+89PZ57BRh+naIRvH70HPwxy5QHYzg1OrEaC7AbA==}
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
@@ -2479,6 +2544,11 @@ snapshots:
       '@csstools/css-parser-algorithms': 3.0.4(@csstools/css-tokenizer@3.0.3)
       '@csstools/css-tokenizer': 3.0.3
       lru-cache: 10.4.3
+
+  '@asteasolutions/zod-to-openapi@5.5.0(zod@3.24.4)':
+    dependencies:
+      openapi3-ts: 4.4.0
+      zod: 3.24.4
 
   '@babel/code-frame@7.27.1':
     dependencies:
@@ -2693,6 +2763,18 @@ snapshots:
       hono: 4.7.8
       minimatch: 9.0.5
 
+  '@hono/zod-openapi@0.9.10(hono@4.7.8)(zod@3.24.4)':
+    dependencies:
+      '@asteasolutions/zod-to-openapi': 5.5.0(zod@3.24.4)
+      '@hono/zod-validator': 0.2.1(hono@4.7.8)(zod@3.24.4)
+      hono: 4.7.8
+      zod: 3.24.4
+
+  '@hono/zod-validator@0.2.1(hono@4.7.8)(zod@3.24.4)':
+    dependencies:
+      hono: 4.7.8
+      zod: 3.24.4
+
   '@humanfs/core@0.19.1': {}
 
   '@humanfs/node@0.16.6':
@@ -2876,12 +2958,33 @@ snapshots:
     dependencies:
       '@swc/counter': 0.1.3
 
+  '@tanstack/form-core@1.12.0':
+    dependencies:
+      '@tanstack/store': 0.7.1
+
   '@tanstack/query-core@5.77.0': {}
+
+  '@tanstack/react-form@1.12.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      '@tanstack/form-core': 1.12.0
+      '@tanstack/react-store': 0.7.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      decode-formdata: 0.9.0
+      devalue: 5.1.1
+      react: 19.1.0
+    transitivePeerDependencies:
+      - react-dom
 
   '@tanstack/react-query@5.77.0(react@19.1.0)':
     dependencies:
       '@tanstack/query-core': 5.77.0
       react: 19.1.0
+
+  '@tanstack/react-store@0.7.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      '@tanstack/store': 0.7.1
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
+      use-sync-external-store: 1.5.0(react@19.1.0)
 
   '@tanstack/react-table@8.21.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
     dependencies:
@@ -2894,6 +2997,8 @@ snapshots:
       '@tanstack/virtual-core': 3.13.9
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
+
+  '@tanstack/store@0.7.1': {}
 
   '@tanstack/table-core@8.21.3': {}
 
@@ -3288,6 +3393,8 @@ snapshots:
 
   decimal.js@10.5.0: {}
 
+  decode-formdata@0.9.0: {}
+
   deep-eql@5.0.2: {}
 
   deep-is@0.1.4: {}
@@ -3297,6 +3404,8 @@ snapshots:
   dequal@2.0.3: {}
 
   destr@2.0.5: {}
+
+  devalue@5.1.1: {}
 
   diff@3.5.0: {}
 
@@ -3938,6 +4047,10 @@ snapshots:
     dependencies:
       mimic-function: 5.0.1
 
+  openapi3-ts@4.4.0:
+    dependencies:
+      yaml: 2.7.1
+
   optionator@0.9.4:
     dependencies:
       deep-is: 0.1.4
@@ -4411,6 +4524,10 @@ snapshots:
     dependencies:
       querystringify: 2.2.0
       requires-port: 1.0.0
+
+  use-sync-external-store@1.5.0(react@19.1.0):
+    dependencies:
+      react: 19.1.0
 
   vite-node@3.1.3(@types/node@20.11.17)(jiti@2.4.2)(yaml@2.7.1):
     dependencies:

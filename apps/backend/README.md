@@ -111,3 +111,11 @@ The API will be available at http://localhost:3000
 ```bash
 open http://localhost:3000
 ```
+
+## TODO
+
+### User Management
+
+- [x] Send emails when inviting organization members via Auth0
+  - [ ] Auth0 client requires "Application Login URI". However, it does not support localhost
+- [ ] Create an organization via Auth0 management API, when an organization is created

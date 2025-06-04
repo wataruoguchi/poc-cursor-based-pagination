@@ -1,14 +1,15 @@
+import { env } from "@/shared/utils/env";
 import { Kysely } from "kysely";
 import type { DB } from "kysely-codegen";
 import { PostgresJSDialect } from "kysely-postgres-js";
 import postgres from "postgres";
 
 const sql = postgres({
-  host: process.env.PGHOST,
-  port: Number(process.env.PGPORT),
-  database: process.env.PGDATABASE,
-  username: process.env.PGUSER,
-  password: process.env.PGPASSWORD,
+  host: env.PGHOST,
+  port: env.PGPORT,
+  database: env.PGDATABASE,
+  username: env.PGUSER,
+  password: env.PGPASSWORD,
 });
 
 export const dialect = new PostgresJSDialect({
@@ -19,11 +20,11 @@ export function connectDb(name?: string): DBClient {
   return new Kysely<DB>({
     dialect: new PostgresJSDialect({
       postgres: postgres({
-        host: process.env.PGHOST,
-        port: Number(process.env.PGPORT),
-        database: name ?? process.env.PGDATABASE,
-        username: process.env.PGUSER,
-        password: process.env.PGPASSWORD,
+        host: env.PGHOST,
+        port: env.PGPORT,
+        database: name ?? env.PGDATABASE,
+        username: env.PGUSER,
+        password: env.PGPASSWORD,
       }),
     }),
   });
