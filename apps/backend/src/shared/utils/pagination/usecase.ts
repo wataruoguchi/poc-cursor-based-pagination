@@ -129,13 +129,55 @@ function createParseCursor(logger: Logger) {
 }
 
 export function encodeCursor(data: CursorData): string {
-  return Buffer.from(JSON.stringify(data)).toString("base64");
+  // Convert Date objects to ISO strings for JSON serialization
+  const serializableData = {
+    ...data,
+    columns: Object.fromEntries(
+      Object.entries(data.columns).map(([key, value]) => [
+        key,
+        value instanceof Date ? value.toISOString() : value,
+      ]),
+    ),
+  };
+  return Buffer.from(JSON.stringify(serializableData)).toString("base64");
 }
 
 export function decodeCursor(cursor: string): CursorData {
-  const decoded = Buffer.from(cursor, "base64").toString("utf-8");
-  const data = JSON.parse(decoded); // TODO: Date type is not supported by JSON.parse. We should somehow determine which columns are dates and parse them accordingly.
-  return cursorSchema.parse(data);
+  try {
+    const decoded = Buffer.from(cursor, "base64").toString("utf-8");
+    const data = JSON.parse(decoded);
+
+    // Convert ISO date strings back to Date objects
+    const parsedData = {
+      ...data,
+      columns: Object.fromEntries(
+        Object.entries(data.columns).map(([key, value]) => [
+          key,
+          typeof value === "string" && isISODateString(value)
+            ? new Date(value)
+            : value,
+        ]),
+      ),
+    };
+
+    return cursorSchema.parse(parsedData);
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      throw new Error("Invalid cursor format: not valid JSON", {
+        cause: error,
+      });
+    }
+    if (error instanceof z.ZodError) {
+      throw new Error("Invalid cursor data structure", { cause: error });
+    }
+    throw new Error("Failed to decode cursor", { cause: error });
+  }
+}
+
+// Helper function to detect ISO date strings
+function isISODateString(value: string): boolean {
+  const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/;
+  return isoDateRegex.test(value) && !Number.isNaN(Date.parse(value));
 }
 
 function createNextCursor(
