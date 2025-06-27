@@ -32,18 +32,26 @@ Provides the high-level API for pagination operations, including cursor encoding
 ```typescript
 import { createPaginatedQuery } from './repository.ts';
 import { createPaginatedUseCase } from './usecase.ts';
+import { createLogger } from '@/infrastructure/logger';
+
+const logger = createLogger('pagination');
 
 // 1. Create a paginated query
 const paginatedQuery = createPaginatedQuery(
+  logger,
   db.selectFrom('users'),
 ).withTextSearchableColumns(['name', 'email']).paginatedQuery;
 
 // 2. Create a use case
-const useCase = createPaginatedUseCase(paginatedQuery, (user) => ({
-  id: user.id,
-  name: user.name,
-  email: user.email,
-}));
+const useCase = createPaginatedUseCase(
+  logger,
+  paginatedQuery,
+  (user) => ({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+  })
+);
 
 // 3. Use pagination
 const result = await useCase.paginatedUseCase();
@@ -54,12 +62,13 @@ const result = await useCase.paginatedUseCase();
 
 ### Repository API
 
-#### `createPaginatedQuery(query)`
+#### `createPaginatedQuery(logger, query)`
 
 Creates a paginated query builder.
 
 **Parameters:**
 
+- `logger`: Logger instance for logging operations
 - `query`: Kysely query builder (must not have orderBy, selectAll, limit, or execute clauses)
 
 **Returns:**
@@ -92,12 +101,13 @@ Executes the paginated query.
 
 ### Use Case API
 
-#### `createPaginatedUseCase(paginatedQuery, transformItem, defaultCursor?)`
+#### `createPaginatedUseCase(logger, paginatedQuery, transformItem, defaultCursor?)`
 
 Creates a pagination use case.
 
 **Parameters:**
 
+- `logger`: Logger instance for logging operations
 - `paginatedQuery`: PaginatedQuery function from repository
 - `transformItem`: Function to transform database items to DTOs
 - `defaultCursor`: Optional default cursor configuration
@@ -182,7 +192,9 @@ const cursor = {
 Enable ILIKE search on string columns:
 
 ```typescript
+const logger = createLogger('pagination');
 const paginatedQuery = createPaginatedQuery(
+  logger,
   db.selectFrom('users'),
 ).withTextSearchableColumns(['name', 'email']).paginatedQuery;
 
@@ -231,6 +243,7 @@ The module provides full TypeScript support with:
 - **Compile-time validation** of searchable columns
 - **Type-safe cursor creation** and decoding
 - **Utility types** for extracting actual data types from Kysely table types
+- **Flexible database type support** allowing extended database schemas
 
 ### Utility Types
 
@@ -269,14 +282,42 @@ type UserDTO = {
   email: string;
 };
 
+const logger = createLogger('pagination');
 const paginatedQuery = createPaginatedQuery<User>(
+  logger,
   db.selectFrom('users'),
 ).withTextSearchableColumns(['name', 'email']).paginatedQuery; // TypeScript validates these are string columns
 
 const useCase = createPaginatedUseCase<User, UserDTO>(
+  logger,
   paginatedQuery,
   (user) => ({ id: user.id, name: user.name, email: user.email }),
 );
+```
+
+### Extended Database Types
+
+The module supports extended database types for testing and custom schemas:
+
+```typescript
+// Define extended database type for testing
+type TestDB = DB & {
+  test_table: {
+    sequential_id: Generated<number>;
+    uuid_id: Generated<string>;
+    created_at: Generated<Date>;
+    name: string;
+    age: number;
+    is_active: boolean;
+  };
+};
+
+// Use with extended database type
+const db: Kysely<TestDB> = getTestDb();
+const paginatedQuery = createPaginatedQuery<TestTableData, TestDB>(
+  logger,
+  db.selectFrom('test_table'),
+).withTextSearchableColumns(['name']).paginatedQuery;
 ```
 
 ## Testing
@@ -287,15 +328,19 @@ The module is designed to be easily testable:
 - **Functional composition** allows testing individual components
 - **Type safety** prevents runtime errors
 - **Comprehensive test suite** included
+- **Support for test database types** with extended schemas
 
 ### Test Example
 
 ```typescript
 import { createPaginatedQuery } from './repository.ts';
+import { createLogger } from '@/infrastructure/logger';
 
 describe('Pagination', () => {
   it('should paginate correctly', async () => {
+    const logger = createLogger('test');
     const paginatedQuery = createPaginatedQuery(
+      logger,
       db.selectFrom('users'),
     ).withTextSearchableColumns(['name']).paginatedQuery;
 
@@ -339,6 +384,12 @@ describe('Pagination', () => {
 - Log cursor errors for debugging
 - Provide meaningful error messages to users
 
+### 5. Logging
+
+- Always provide a logger instance for proper observability
+- Use descriptive logger names for different modules
+- Log important pagination events for debugging
+
 ## Migration from Offset Pagination
 
 If migrating from offset-based pagination:
@@ -347,6 +398,7 @@ If migrating from offset-based pagination:
 2. **Modify frontend** to handle cursor-based navigation
 3. **Add database indexes** on cursor columns
 4. **Update documentation** to reflect new pagination behavior
+5. **Add logging** for pagination operations
 
 ## Contributing
 
@@ -357,3 +409,4 @@ When contributing to this module:
 3. **Update documentation** for API changes
 4. **Ensure type safety** with TypeScript
 5. **Follow existing patterns** for consistency
+6. **Include proper logging** in all functions

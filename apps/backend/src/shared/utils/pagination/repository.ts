@@ -1,4 +1,3 @@
-import type { DBClient } from "@/infrastructure/database.js";
 import type { Logger } from "@/infrastructure/logger.js";
 import {
   sql,
@@ -6,11 +5,9 @@ import {
   type ExpressionBuilder,
   type Generated,
   type OrderByDirectionExpression,
+  type SelectQueryBuilder,
 } from "kysely";
-import type { DB } from "kysely-codegen";
 import type { BaseRecord, CursorData } from "./usecase.ts";
-
-type QueryBuilder = ReturnType<DBClient["selectFrom"]>;
 
 /**
  * Utility type to extract actual data types from Kysely table types.
@@ -106,9 +103,14 @@ type StringTypeColumnName<T> = {
  *
  * @param query - The query builder to use. It should NOT have any "orderBy", "select", "selectAll", "limit" or "execute" clauses.
  */
-export function createPaginatedQuery<T extends BaseRecord>(
+export function createPaginatedQuery<
+  T extends BaseRecord,
+  TDB extends Record<string, unknown> = Record<string, unknown>,
+>(
   logger: Logger,
-  query: QueryBuilder & { selectAll(): { execute(): Promise<T[]> } },
+  query: SelectQueryBuilder<TDB, string, Record<string, unknown>> & {
+    selectAll(): { execute(): Promise<T[]> };
+  },
 ) {
   // Return a function that accepts searchable columns
   return {
@@ -144,9 +146,12 @@ export type PaginatedQuery<T extends BaseRecord> = (
  * - totalCount: The total count of items.
  * - hasMore: A boolean indicating if there is more data to fetch.
  */
-function createPaginatedQueryFromQuery<T extends BaseRecord>(
+function createPaginatedQueryFromQuery<
+  T extends BaseRecord,
+  TDB extends Record<string, unknown> = Record<string, unknown>,
+>(
   logger: Logger,
-  query: QueryBuilder,
+  query: SelectQueryBuilder<TDB, string, Record<string, unknown>>,
   textSearchableColumns: StringTypeColumnName<T>[],
 ): { paginatedQuery: PaginatedQuery<T> } {
   return {
@@ -207,7 +212,7 @@ function createPaginatedQueryFromQuery<T extends BaseRecord>(
       // Build cursor query with WHERE conditions
       const cursorQuery =
         columnsThatAreDefinedAndNotEmpty.length > 0
-          ? sortedQuery.where((eb: ExpressionBuilder<DB, keyof DB>) =>
+          ? sortedQuery.where((eb: ExpressionBuilder<TDB, string>) =>
               eb.or(
                 columnsThatAreDefinedAndNotEmpty.map((column) =>
                   eb(sql.ref(column), comparison, columns[column]),
@@ -244,7 +249,9 @@ function isDefinedAndNotEmpty(value: string | number | boolean | Date | null) {
 }
 
 function createFetchTotalCount(logger: Logger) {
-  return async function fetchTotalCount(query: QueryBuilder) {
+  return async function fetchTotalCount<
+    TDB extends Record<string, unknown> = Record<string, unknown>,
+  >(query: SelectQueryBuilder<TDB, string, Record<string, unknown>>) {
     logger.info("start fetchTotalCount");
     const result = await query
       .select(sql`count(*)`.as("count"))

@@ -16,8 +16,8 @@ export const dialect = new PostgresJSDialect({
   postgres: sql,
 });
 
-export function connectDb(name?: string): DBClient {
-  return new Kysely<DB>({
+export function connectDb<T extends DB>(name?: string): Kysely<T> {
+  return new Kysely<T>({
     dialect: new PostgresJSDialect({
       postgres: postgres({
         host: env.PGHOST,

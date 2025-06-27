@@ -1,9 +1,12 @@
-import { type DBClient, connectDb, getDb } from "@/infrastructure/database";
-import { Migrator, sql } from "kysely";
+import { connectDb, getDb, type DBClient } from "@/infrastructure/database";
+import { Migrator, sql, type Kysely } from "kysely";
+import type { DB } from "kysely-codegen";
 import pino from "pino";
 import { ESMFileMigrationProvider } from "./ESMFileMigrationProvider";
 
-export async function getTestDb(name = "test"): Promise<DBClient> {
+export async function getTestDb<T extends DB>(
+  name = "test",
+): Promise<Kysely<T>> {
   const logger = getLogger();
   const db = getDb();
   logger.info(`Creating the test database ${name}`);
@@ -13,7 +16,7 @@ export async function getTestDb(name = "test"): Promise<DBClient> {
   await db.destroy();
 
   logger.debug(`Connecting to the test database ${name}`);
-  const testDb = connectDb(name);
+  const testDb = connectDb<T>(name);
   logger.debug(`Running migrations for ${name}`);
 
   // https://github.com/kysely-org/kysely/blob/master/example/test/test-context.ts#L50
