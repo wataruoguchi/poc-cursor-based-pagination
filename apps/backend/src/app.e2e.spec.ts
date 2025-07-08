@@ -1,9 +1,9 @@
 import type { Hono } from "hono";
 import { getApp } from "./app";
-import { type DBClient, getTestDb } from "./dev-utils/dev-db";
+import { getTestDb, type DBClient } from "./dev-utils/dev-db";
 import { seedProducts, seedUsers } from "./dev-utils/mocks/seed";
 import type { User } from "./modules/user/domain/user.entity";
-import { decodeCursor, encodeCursor } from "./shared/utils/pagination";
+import { decodeCursor, encodeCursor } from "./shared/utils/pagination/usecase";
 
 describe("app", () => {
   let testDb: DBClient;
@@ -86,15 +86,13 @@ describe("app", () => {
         test("should return 200 with valid cursor", async () => {
           const LIMIT = 3;
           const cursor = encodeCursor({
-            column: "id",
-            id: "",
+            columns: {
+              id: "",
+            },
             limit: LIMIT,
             direction: "next",
             timestamp: Date.now(),
             filters: {},
-            sortBy: "id",
-            sortOrder: "asc",
-            search: "",
           });
           const res = await app.request(
             `/api/products/paginated?cursor=${cursor}`,
@@ -106,9 +104,11 @@ describe("app", () => {
           } = resJson;
 
           const decodedPreviousCursor = decodeCursor(previousCursor);
-          expect(decodedPreviousCursor.id).toEqual(sortedProducts[0].id);
+          expect(decodedPreviousCursor.columns.id).toEqual(
+            sortedProducts[0].id,
+          );
           const decodedNextCursor = decodeCursor(nextCursor);
-          expect(decodedNextCursor.id).toEqual(
+          expect(decodedNextCursor.columns.id).toEqual(
             sortedProducts[sortedProducts.slice(0, LIMIT).length - 1].id,
           );
 

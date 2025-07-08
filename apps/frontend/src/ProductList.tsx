@@ -1,13 +1,13 @@
 import type { ColumnDef } from "@tanstack/react-table";
-import { createUseAuthPaginationQuery } from "./lib/create-use-auth-pagination-query";
-import { useAuthPaginationQuery } from "./hooks/use-auth-pagination-query";
 import { InfiniteScrollingTable } from "./components/InfiniteScrollingTable";
+import { useAuthPaginationQuery } from "./hooks/use-auth-pagination-query";
 import {
   type FetchedProducts,
   FetchedProductsSchema,
   getApiEndpointPath,
   queryKeyToProducts,
 } from "./lib/api/products";
+import { createUseAuthPaginationQuery } from "./lib/create-use-auth-pagination-query";
 
 export function ProductList() {
   const columns: ColumnDef<FetchedProducts>[] = [
@@ -21,15 +21,18 @@ export function ProductList() {
   ];
 
   return (
-    <InfiniteScrollingTable
-      columns={columns}
-      query={createUseAuthPaginationQuery(
-        useAuthPaginationQuery,
-        queryKeyToProducts,
-        getApiEndpointPath,
-        FetchedProductsSchema,
-        { limit: 3 },
-      )}
-    />
+    <>
+      <h2>Products</h2>
+      <InfiniteScrollingTable
+        columns={columns}
+        query={createUseAuthPaginationQuery(
+          useAuthPaginationQuery,
+          queryKeyToProducts,
+          getApiEndpointPath,
+          FetchedProductsSchema,
+          { limit: 3 },
+        )}
+      />
+    </>
   );
 }

@@ -2,8 +2,11 @@
  * This is where everything meets.
  */
 import type { Logger } from "@/infrastructure/logger";
-import { createPaginatedUseCase } from "@/shared/utils/pagination";
-import { type Product, productSchema } from "../domain/product.entity";
+import {
+  createPaginatedUseCase,
+  getDefaultCursorData,
+} from "@/shared/utils/pagination/usecase";
+import { productSchema, type Product } from "../domain/product.entity";
 import type { ProductRepository } from "../infrastructure/product.repository";
 
 type ProductRecord = {
@@ -30,18 +33,20 @@ export const productUseCases = (
       );
     },
     findProductsPaginated: createPaginatedUseCase<ProductRecord, Product>(
-      { findPaginated: shoppingCartRepository.findProductsPaginated },
       logger,
-      {
-        defaultLimit: 10,
-        defaultSortBy: "id",
-        defaultSortOrder: "asc",
-      },
+      shoppingCartRepository.findProductsPaginated().paginatedQuery,
       (product) =>
         productSchema.parse({
           id: product.id,
           name: product.product_name,
         }),
-    ).findPaginated,
+      {
+        ...getDefaultCursorData(),
+        columns: {
+          created_at: null,
+          id: null,
+        },
+      },
+    ).paginatedUseCase,
   };
 };
