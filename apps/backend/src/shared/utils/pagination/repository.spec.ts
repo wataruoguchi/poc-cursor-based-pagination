@@ -125,10 +125,9 @@ describe("Pagination Repository", () => {
 
     it("should execute pagination with cursor", async () => {
       const cursor: CursorData = {
-        columns: {
-          created_at: null,
-          sequential_id: null,
-        },
+        idColumnName: "sequential_id",
+        idColumnValue: null,
+        orderBy: ["created_at", "sequential_id"],
         limit: 5,
         direction: "next",
         filters: {},
@@ -154,10 +153,9 @@ describe("Pagination Repository", () => {
       it("should apply search filter when filters are provided [name]:", async () => {
         const LIMIT = 10;
         const cursor: CursorData = {
-          columns: {
-            created_at: null,
-            sequential_id: null,
-          },
+          idColumnName: "sequential_id",
+          idColumnValue: null,
+          orderBy: ["created_at", "sequential_id"],
           limit: LIMIT,
           direction: "next",
           filters: { name: "Chris" },
@@ -177,10 +175,9 @@ describe("Pagination Repository", () => {
       it("should apply search filter when filters are provided [age]:", async () => {
         const LIMIT = 10;
         const cursor: CursorData = {
-          columns: {
-            created_at: null,
-            sequential_id: null,
-          },
+          idColumnName: "sequential_id",
+          idColumnValue: null,
+          orderBy: ["created_at", "sequential_id"],
           limit: LIMIT,
           direction: "next",
           filters: { age: 20 },
@@ -200,10 +197,9 @@ describe("Pagination Repository", () => {
       it("should apply search filter when filters are provided [age, name]:", async () => {
         const LIMIT = 10;
         const cursor: CursorData = {
-          columns: {
-            created_at: null,
-            sequential_id: null,
-          },
+          idColumnName: "sequential_id",
+          idColumnValue: null,
+          orderBy: ["created_at", "sequential_id"],
           limit: LIMIT,
           direction: "next",
           filters: { age: 20, name: "Chris" },
@@ -235,10 +231,9 @@ describe("Pagination Repository", () => {
         const expectedItems = [...restUsers].slice(0, LIMIT);
 
         const cursor: CursorData = {
-          columns: {
-            created_at: firstUser.created_at,
-            sequential_id: firstUser.sequential_id,
-          },
+          idColumnName: "sequential_id",
+          idColumnValue: firstUser.sequential_id,
+          orderBy: ["created_at", "sequential_id"],
           limit: LIMIT,
           direction: "next",
           filters: {},
@@ -254,7 +249,7 @@ describe("Pagination Repository", () => {
 
       it("should apply id filter when id is provided, even with a different column", async () => {
         const LIMIT = 5;
-        const ORDER_BY_COLUMN = "uuid_id";
+        const ORDER_BY_COLUMN = "sequential_id";
         // Get first user ID to use as cursor
         const [firstUser, ...restUsers] = await db
           .selectFrom("test_table")
@@ -266,10 +261,9 @@ describe("Pagination Repository", () => {
         const expectedItems = [...restUsers].slice(0, LIMIT);
 
         const cursor: CursorData = {
-          columns: {
-            created_at: firstUser.created_at,
-            [ORDER_BY_COLUMN]: firstUser[ORDER_BY_COLUMN],
-          },
+          idColumnName: ORDER_BY_COLUMN,
+          idColumnValue: firstUser[ORDER_BY_COLUMN],
+          orderBy: ["created_at", ORDER_BY_COLUMN],
           limit: LIMIT,
           direction: "next",
           filters: {},
@@ -308,10 +302,9 @@ describe("Pagination Repository", () => {
         ).length;
 
         const cursor: CursorData = {
-          columns: {
-            created_at: firstUser.created_at,
-            [ORDER_BY_COLUMN]: firstUser[ORDER_BY_COLUMN],
-          },
+          idColumnName: ORDER_BY_COLUMN,
+          idColumnValue: firstUser[ORDER_BY_COLUMN],
+          orderBy: ["created_at", ORDER_BY_COLUMN],
           limit: LIMIT,
           direction: "next",
           filters: { name: "Chris", is_active: true },
@@ -351,10 +344,9 @@ describe("Pagination Repository", () => {
       const expectedItems = [...restUsers].slice(0, LIMIT);
 
       const cursor: CursorData = {
-        columns: {
-          created_at: firstUser.created_at,
-          [ORDER_BY_COLUMN]: firstUser[ORDER_BY_COLUMN],
-        },
+        idColumnName: ORDER_BY_COLUMN,
+        idColumnValue: firstUser[ORDER_BY_COLUMN],
+        orderBy: ["created_at", ORDER_BY_COLUMN],
         limit: LIMIT,
         direction: "prev",
         filters: {},
@@ -370,9 +362,9 @@ describe("Pagination Repository", () => {
 
     it("should handle hasMore correctly when no more items exist", async () => {
       const cursor: CursorData = {
-        columns: {
-          sequential_id: null,
-        },
+        idColumnName: "sequential_id",
+        idColumnValue: null,
+        orderBy: ["created_at", "sequential_id"],
         limit: 1000,
         direction: "next",
         filters: {},
@@ -395,9 +387,9 @@ describe("Pagination Repository", () => {
 
     it("should handle empty result set", async () => {
       const cursor: CursorData = {
-        columns: {
-          sequential_id: null,
-        },
+        idColumnName: "sequential_id",
+        idColumnValue: null,
+        orderBy: ["created_at", "sequential_id"],
         limit: 10,
         direction: "next",
         filters: {},

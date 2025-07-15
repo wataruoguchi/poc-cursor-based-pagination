@@ -2,7 +2,6 @@ import type { Logger } from "@/infrastructure/logger.js";
 import {
   sql,
   type ComparisonOperatorExpression,
-  type ExpressionBuilder,
   type Generated,
   type OrderByDirectionExpression,
   type SelectQueryBuilder,
@@ -89,9 +88,9 @@ type StringTypeColumnName<T> = {
  *
  * ```ts
  * const { items, totalCount, hasMore } = createPaginatedQuery(query).withTextSearchableColumns(['id', 'name', 'email']).paginatedQuery({
- *   columns: {
- *     id: null,
- *   },
+ *   idColumnName: 'id',
+ *   idColumnValue: null,
+ *   orderBy: ['created_at', 'id'],
  *   direction: 'next',
  *   limit: 10,
  *   filters: {
@@ -169,9 +168,16 @@ function createPaginatedQueryFromQuery<
       hasMore: boolean;
     }> {
       // Apply filters
-      const { columns, direction, limit, filters } = decodedCursor;
+      const {
+        idColumnName,
+        idColumnValue,
+        orderBy,
+        direction,
+        limit,
+        filters,
+      } = decodedCursor;
       logger.info(
-        { columns, direction, limit, filters },
+        { idColumnName, idColumnValue, orderBy, direction, limit, filters },
         "start paginatedQuery",
       );
 
@@ -202,23 +208,15 @@ function createPaginatedQueryFromQuery<
       const totalCount = await createFetchTotalCount(logger)(filteredQuery);
 
       // Build cursor query with ORDER BY clauses
-      const sortedQuery = Object.keys(columns).reduce((acc, column) => {
+      const sortedQuery = orderBy.reduce((acc, column) => {
         return acc.orderBy(sql.ref(column), order);
       }, filteredQuery);
 
-      const columnsThatAreDefinedAndNotEmpty = Object.keys(columns).filter(
-        (column) => isDefinedAndNotEmpty(columns[column]),
-      );
       // Build cursor query with WHERE conditions
       const cursorQuery =
-        columnsThatAreDefinedAndNotEmpty.length > 0
-          ? sortedQuery.where((eb: ExpressionBuilder<TDB, string>) =>
-              eb.or(
-                columnsThatAreDefinedAndNotEmpty.map((column) =>
-                  eb(sql.ref(column), comparison, columns[column]),
-                ),
-              ),
-            )
+        isDefinedAndNotEmpty(idColumnValue) &&
+        isDefinedAndNotEmpty(idColumnName)
+          ? sortedQuery.where(sql.ref(idColumnName), comparison, idColumnValue)
           : sortedQuery;
 
       // Execute the main query with limit from cursor or default

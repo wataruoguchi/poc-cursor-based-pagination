@@ -69,9 +69,8 @@ describe("Pagination Use Case", () => {
 
       const customDefaultCursor: CursorData = {
         ...getDefaultCursorData(),
-        columns: {
-          name: null,
-        },
+        idColumnName: "name",
+        idColumnValue: null,
         limit: 5,
       };
 
@@ -84,7 +83,8 @@ describe("Pagination Use Case", () => {
 
       expect(mockPaginatedQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          columns: customDefaultCursor.columns,
+          idColumnName: customDefaultCursor.idColumnName,
+          idColumnValue: customDefaultCursor.idColumnValue,
           limit: customDefaultCursor.limit,
         }),
       );
@@ -104,9 +104,8 @@ describe("Pagination Use Case", () => {
       // Create a cursor for the second page
       const cursorData: CursorData = {
         ...getDefaultCursorData(),
-        columns: {
-          id: "1",
-        },
+        idColumnName: "id",
+        idColumnValue: "1",
         direction: "next",
       };
 
@@ -114,7 +113,8 @@ describe("Pagination Use Case", () => {
 
       expect(mockPaginatedQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          columns: cursorData.columns,
+          idColumnName: cursorData.idColumnName,
+          idColumnValue: cursorData.idColumnValue,
           direction: cursorData.direction,
         }),
       );
@@ -173,13 +173,13 @@ describe("Pagination Use Case", () => {
       expect(nextCursor).toBeDefined();
       if (nextCursor) {
         expect(decodeCursor(nextCursor)).toEqual({
-          columns: {
-            id: mockItems.findLast((item) => item.id)?.id,
-          },
+          idColumnName: "id",
+          idColumnValue: mockItems.findLast((item) => item.id)?.id,
           direction: "next",
           limit: getDefaultCursorData().limit,
           filters: getDefaultCursorData().filters,
           timestamp: expect.any(Number),
+          orderBy: ["created_at", "id"],
         });
       }
     });
@@ -191,9 +191,8 @@ describe("Pagination Use Case", () => {
       // Create a cursor for the second page
       const cursorData: CursorData = {
         ...getDefaultCursorData(),
-        columns: {
-          id: "1",
-        },
+        idColumnName: "id",
+        idColumnValue: "1",
         direction: "next",
       };
 
@@ -209,13 +208,13 @@ describe("Pagination Use Case", () => {
       expect(previousCursor).toBeDefined();
       if (previousCursor) {
         expect(decodeCursor(previousCursor)).toEqual({
-          columns: {
-            id: mockItems.find((item) => item.id)?.id,
-          },
+          idColumnName: "id",
+          idColumnValue: mockItems.find((item) => item.id)?.id,
           direction: "prev",
           limit: getDefaultCursorData().limit,
           filters: getDefaultCursorData().filters,
           timestamp: expect.any(Number),
+          orderBy: ["created_at", "id"],
         });
       }
     });
@@ -290,9 +289,8 @@ describe("Pagination Use Case", () => {
       const ID_COLUMN = "custom_id";
       const customDefaultCursor: CursorData = {
         ...getDefaultCursorData(),
-        columns: {
-          [ID_COLUMN]: null,
-        },
+        idColumnName: ID_COLUMN,
+        idColumnValue: null,
       };
       const mockLogger = createLogger("test");
 
@@ -310,7 +308,7 @@ describe("Pagination Use Case", () => {
       expect(nextCursor).toBeDefined();
       if (nextCursor) {
         const decodedNextCursor = decodeCursor(nextCursor);
-        expect(decodedNextCursor.columns[ID_COLUMN]).toBe(
+        expect(decodedNextCursor.idColumnValue).toBe(
           mockItems.findLast((item) => item[ID_COLUMN])?.[ID_COLUMN],
         );
       }

@@ -3,11 +3,18 @@ import { z } from "zod";
 import type { PaginatedQuery } from "./repository.ts";
 
 const cursorSchema = z.object({
-  // Columns to order by. Values are the values of the columns to start from.
-  columns: z.record(
+  // The column name of the id column.
+  idColumnName: z.string(),
+  // The value of the id column. When it's set, it means that there's a cursor for a specific id.
+  idColumnValue: z.union([
     z.string(),
-    z.union([z.string(), z.number(), z.boolean(), z.date(), z.null()]),
-  ),
+    z.number(),
+    z.boolean(),
+    z.date(),
+    z.null(),
+  ]),
+  // Columns to order by. Values are the values of the columns to start from.
+  orderBy: z.string().array(),
   // Pagination.
   limit: z.number().int().positive(),
   // Direction of the pagination.
@@ -35,10 +42,9 @@ type PaginatedResult<T> = {
 
 export function getDefaultCursorData(): CursorData {
   return {
-    columns: {
-      created_at: null,
-      id: null,
-    },
+    idColumnName: "id",
+    idColumnValue: null,
+    orderBy: ["created_at", "id"],
     limit: 10,
     direction: "next",
     filters: {},
@@ -132,12 +138,10 @@ export function encodeCursor(data: CursorData): string {
   // Convert Date objects to ISO strings for JSON serialization
   const serializableData = {
     ...data,
-    columns: Object.fromEntries(
-      Object.entries(data.columns).map(([key, value]) => [
-        key,
-        value instanceof Date ? value.toISOString() : value,
-      ]),
-    ),
+    idColumnValue:
+      data.idColumnValue instanceof Date
+        ? data.idColumnValue.toISOString()
+        : data.idColumnValue,
   };
   return Buffer.from(JSON.stringify(serializableData)).toString("base64");
 }
@@ -150,14 +154,10 @@ export function decodeCursor(cursor: string): CursorData {
     // Convert ISO date strings back to Date objects
     const parsedData = {
       ...data,
-      columns: Object.fromEntries(
-        Object.entries(data.columns).map(([key, value]) => [
-          key,
-          typeof value === "string" && isISODateString(value)
-            ? new Date(value)
-            : value,
-        ]),
-      ),
+      idColumnValue:
+        data.idColumnValue instanceof Date
+          ? data.idColumnValue.toISOString()
+          : data.idColumnValue,
     };
 
     return cursorSchema.parse(parsedData);
@@ -206,12 +206,7 @@ function createCursorData(
 ): CursorData {
   return {
     ...currentCursor,
-    columns: {
-      ...Object.keys(currentCursor.columns).reduce((acc, key) => {
-        acc[key] = item[key];
-        return acc;
-      }, {} as BaseRecord),
-    },
+    idColumnValue: item[currentCursor.idColumnName],
     timestamp: Date.now(),
   };
 }
