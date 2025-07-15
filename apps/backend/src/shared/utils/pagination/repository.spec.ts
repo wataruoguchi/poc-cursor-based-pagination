@@ -249,7 +249,7 @@ describe("Pagination Repository", () => {
 
       it("should apply id filter when id is provided, even with a different column", async () => {
         const LIMIT = 5;
-        const ORDER_BY_COLUMN = "sequential_id";
+        const ORDER_BY_COLUMN = "name";
         // Get first user ID to use as cursor
         const [firstUser, ...restUsers] = await db
           .selectFrom("test_table")
