@@ -2,23 +2,21 @@ import type { Logger } from "@/infrastructure/logger.ts";
 import { z } from "zod";
 import type { PaginatedQuery } from "./repository.ts";
 
+const limitSchema = z.number().int().positive();
+const directionSchema = z.enum(["next", "prev"]);
+
 const cursorSchema = z.object({
-  // The column name of the id column.
-  idColumnName: z.string(),
-  // The value of the id column. When it's set, it means that there's a cursor for a specific id.
-  idColumnValue: z.union([
+  // Values for all ORDER BY columns (for proper multi-column cursor pagination)
+  cursorValues: z.record(
     z.string(),
-    z.number(),
-    z.boolean(),
-    z.date(),
-    z.null(),
-  ]),
-  // Columns to order by. Values are the values of the columns to start from.
+    z.union([z.string(), z.number(), z.boolean(), z.date(), z.null()]),
+  ),
+  // Column names to order by.
   orderBy: z.string().array(),
   // Pagination.
-  limit: z.number().int().positive(),
+  limit: limitSchema,
   // Direction of the pagination.
-  direction: z.enum(["next", "prev"]),
+  direction: directionSchema,
   // Filters.
   filters: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
   // Timestamp. The timestamp of the cursor. We can use it to detect if the cursor is outdated.
@@ -42,8 +40,7 @@ type PaginatedResult<T> = {
 
 export function getDefaultCursorData(): CursorData {
   return {
-    idColumnName: "id",
-    idColumnValue: null,
+    cursorValues: {},
     orderBy: ["created_at", "id"],
     limit: 10,
     direction: "next",
@@ -76,21 +73,35 @@ export function createPaginatedUseCase<
   transformItem: (item: T) => R,
   defaultDecodedCursor = getDefaultCursorData(),
 ) {
+  const parseCursor = createParseCursor(logger);
   return {
     /**
      * This function is used to paginate the query.
      *
      * @param encodedCursor - The encoded cursor.
+     * @param filters - The filters to apply to the query.
      * @returns The paginated items, the total count and a boolean indicating if there is more data to fetch.
      */
     paginatedUseCase: async function paginatedUseCase(
       encodedCursor?: string,
+      filters?: Record<"limit" | "direction", string | number | boolean>,
     ): Promise<PaginatedResult<R>> {
+      let limit: number | undefined;
+      let direction: "next" | "prev" | undefined;
+      if (filters) {
+        limit = limitSchema.safeParse(filters.limit).success
+          ? limitSchema.safeParse(filters.limit).data
+          : undefined;
+        direction = directionSchema.safeParse(filters.direction).success
+          ? directionSchema.safeParse(filters.direction).data
+          : undefined;
+      }
       // Create cursor data from parameters or use existing cursor
-      const decodedCursor = createParseCursor(logger)(
-        defaultDecodedCursor,
-        encodedCursor,
-      );
+      const decodedCursor = {
+        ...parseCursor(defaultDecodedCursor, encodedCursor),
+        ...(limit !== undefined ? { limit } : {}),
+        ...(direction !== undefined ? { direction } : {}),
+      };
       const { items, totalCount, hasMore } =
         await paginatedQuery(decodedCursor);
 
@@ -138,10 +149,12 @@ export function encodeCursor(data: CursorData): string {
   // Convert Date objects to ISO strings for JSON serialization
   const serializableData = {
     ...data,
-    idColumnValue:
-      data.idColumnValue instanceof Date
-        ? data.idColumnValue.toISOString()
-        : data.idColumnValue,
+    cursorValues: Object.fromEntries(
+      Object.entries(data.cursorValues).map(([key, value]) => [
+        key,
+        value instanceof Date ? value.toISOString() : value,
+      ]),
+    ),
   };
   return Buffer.from(JSON.stringify(serializableData)).toString("base64");
 }
@@ -154,13 +167,16 @@ export function decodeCursor(cursor: string): CursorData {
     // Convert ISO date strings back to Date objects
     const parsedData = {
       ...data,
-      idColumnValue:
-        data.idColumnValue instanceof Date
-          ? data.idColumnValue.toISOString()
-          : data.idColumnValue,
+      cursorValues: Object.fromEntries(
+        Object.entries(data.cursorValues || {}).map(([key, value]) => [
+          key,
+          typeof value === "string" && isISODateString(value)
+            ? new Date(value)
+            : value,
+        ]),
+      ),
     };
-
-    return cursorSchema.parse(parsedData);
+    return { ...getDefaultCursorData(), ...cursorSchema.parse(parsedData) };
   } catch (error) {
     if (error instanceof SyntaxError) {
       throw new Error("Invalid cursor format: not valid JSON", {
@@ -204,9 +220,18 @@ function createCursorData(
   currentCursor: CursorData,
   item: BaseRecord,
 ): CursorData {
+  const cursorValues: Record<string, string | number | boolean | Date | null> =
+    {};
+
+  for (const column of currentCursor.orderBy) {
+    if (item[column] !== undefined) {
+      cursorValues[column] = item[column];
+    }
+  }
+
   return {
     ...currentCursor,
-    idColumnValue: item[currentCursor.idColumnName],
+    cursorValues,
     timestamp: Date.now(),
   };
 }

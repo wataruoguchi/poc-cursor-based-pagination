@@ -1,4 +1,4 @@
-import { createLogger } from "@/infrastructure/logger";
+import type { Logger } from "@/infrastructure/logger";
 import { describe, expect, it, vi } from "vitest";
 import {
   createPaginatedUseCase,
@@ -10,6 +10,22 @@ import {
 } from "./usecase";
 
 // Mock logger that matches pino interface
+const createMockLogger = (): Logger =>
+  ({
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+    trace: vi.fn(),
+    fatal: vi.fn(),
+    silent: vi.fn(),
+    level: "info",
+    child: vi.fn().mockReturnThis(),
+    isLevelEnabled: vi.fn().mockReturnValue(true),
+    bindings: vi.fn().mockReturnValue({}),
+    flush: vi.fn().mockResolvedValue(undefined),
+  }) as unknown as Logger;
+
 // Mock paginated query function
 const createMockPaginatedQuery = <T extends BaseRecord>(
   mockItems: T[],
@@ -37,7 +53,7 @@ describe("Pagination Use Case", () => {
         TOTAL_COUNT,
         HAS_MORE,
       );
-      const mockLogger = createLogger("test");
+      const mockLogger = createMockLogger();
 
       const result = await createPaginatedUseCase(
         mockLogger,
@@ -65,12 +81,14 @@ describe("Pagination Use Case", () => {
         TOTAL_COUNT,
         HAS_MORE,
       );
-      const mockLogger = createLogger("test");
+      const mockLogger = createMockLogger();
 
       const customDefaultCursor: CursorData = {
         ...getDefaultCursorData(),
-        idColumnName: "name",
-        idColumnValue: null,
+        cursorValues: {
+          name: null,
+        },
+        orderBy: ["name"],
         limit: 5,
       };
 
@@ -83,8 +101,8 @@ describe("Pagination Use Case", () => {
 
       expect(mockPaginatedQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          idColumnName: customDefaultCursor.idColumnName,
-          idColumnValue: customDefaultCursor.idColumnValue,
+          cursorValues: customDefaultCursor.cursorValues,
+          orderBy: customDefaultCursor.orderBy,
           limit: customDefaultCursor.limit,
         }),
       );
@@ -93,7 +111,7 @@ describe("Pagination Use Case", () => {
     it("should decode and use provided cursor", async () => {
       const mockItems = [{ id: "2", name: "Item 2" }];
       const mockPaginatedQuery = createMockPaginatedQuery(mockItems, 5, true);
-      const mockLogger = createLogger("test");
+      const mockLogger = createMockLogger();
 
       const useCase = createPaginatedUseCase(
         mockLogger,
@@ -104,8 +122,9 @@ describe("Pagination Use Case", () => {
       // Create a cursor for the second page
       const cursorData: CursorData = {
         ...getDefaultCursorData(),
-        idColumnName: "id",
-        idColumnValue: "1",
+        cursorValues: {
+          id: "1",
+        },
         direction: "next",
       };
 
@@ -113,8 +132,7 @@ describe("Pagination Use Case", () => {
 
       expect(mockPaginatedQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          idColumnName: cursorData.idColumnName,
-          idColumnValue: cursorData.idColumnValue,
+          cursorValues: cursorData.cursorValues,
           direction: cursorData.direction,
         }),
       );
@@ -126,7 +144,7 @@ describe("Pagination Use Case", () => {
         1,
         false,
       );
-      const mockLogger = createLogger("test");
+      const mockLogger = createMockLogger();
 
       await createPaginatedUseCase(
         mockLogger,
@@ -150,7 +168,7 @@ describe("Pagination Use Case", () => {
         { id: "1", name: "Item 1" },
         { id: "2", name: "Item 2" },
       ];
-      const mockLogger = createLogger("test");
+      const mockLogger = createMockLogger();
 
       const result = await createPaginatedUseCase(
         mockLogger,
@@ -173,26 +191,28 @@ describe("Pagination Use Case", () => {
       expect(nextCursor).toBeDefined();
       if (nextCursor) {
         expect(decodeCursor(nextCursor)).toEqual({
-          idColumnName: "id",
-          idColumnValue: mockItems.findLast((item) => item.id)?.id,
+          cursorValues: {
+            id: mockItems.findLast((item) => item.id)?.id,
+          },
+          orderBy: getDefaultCursorData().orderBy,
           direction: "next",
           limit: getDefaultCursorData().limit,
           filters: getDefaultCursorData().filters,
           timestamp: expect.any(Number),
-          orderBy: ["created_at", "id"],
         });
       }
     });
 
     it("should create previous cursor when navigating with a cursor", async () => {
       const mockItems = [{ id: "2", name: "Item 2" }];
-      const mockLogger = createLogger("test");
+      const mockLogger = createMockLogger();
 
       // Create a cursor for the second page
       const cursorData: CursorData = {
         ...getDefaultCursorData(),
-        idColumnName: "id",
-        idColumnValue: "1",
+        cursorValues: {
+          id: "1",
+        },
         direction: "next",
       };
 
@@ -208,19 +228,20 @@ describe("Pagination Use Case", () => {
       expect(previousCursor).toBeDefined();
       if (previousCursor) {
         expect(decodeCursor(previousCursor)).toEqual({
-          idColumnName: "id",
-          idColumnValue: mockItems.find((item) => item.id)?.id,
+          cursorValues: {
+            id: mockItems.find((item) => item.id)?.id,
+          },
+          orderBy: getDefaultCursorData().orderBy,
           direction: "prev",
           limit: getDefaultCursorData().limit,
           filters: getDefaultCursorData().filters,
           timestamp: expect.any(Number),
-          orderBy: ["created_at", "id"],
         });
       }
     });
 
     it("should not create next cursor when no more items", async () => {
-      const mockLogger = createLogger("test");
+      const mockLogger = createMockLogger();
       const result = await createPaginatedUseCase(
         mockLogger,
         createMockPaginatedQuery([{ id: "1", name: "Item 1" }], 1, false),
@@ -231,7 +252,7 @@ describe("Pagination Use Case", () => {
     });
 
     it("should not create previous cursor when no initial cursor provided", async () => {
-      const mockLogger = createLogger("test");
+      const mockLogger = createMockLogger();
       const result = await createPaginatedUseCase(
         mockLogger,
         createMockPaginatedQuery([{ id: "1", name: "Item 1" }], 1, false),
@@ -241,7 +262,7 @@ describe("Pagination Use Case", () => {
     });
 
     it("should transform items using the provided transform function", async () => {
-      const mockLogger = createLogger("test");
+      const mockLogger = createMockLogger();
       const result = await createPaginatedUseCase(
         mockLogger,
         createMockPaginatedQuery(
@@ -263,7 +284,7 @@ describe("Pagination Use Case", () => {
     });
 
     it("should handle empty result set", async () => {
-      const mockLogger = createLogger("test");
+      const mockLogger = createMockLogger();
       const result = await createPaginatedUseCase(
         mockLogger,
         createMockPaginatedQuery([], 0, false),
@@ -289,10 +310,12 @@ describe("Pagination Use Case", () => {
       const ID_COLUMN = "custom_id";
       const customDefaultCursor: CursorData = {
         ...getDefaultCursorData(),
-        idColumnName: ID_COLUMN,
-        idColumnValue: null,
+        cursorValues: {
+          [ID_COLUMN]: null,
+        },
+        orderBy: [ID_COLUMN],
       };
-      const mockLogger = createLogger("test");
+      const mockLogger = createMockLogger();
 
       const result = await createPaginatedUseCase(
         mockLogger,
@@ -308,10 +331,34 @@ describe("Pagination Use Case", () => {
       expect(nextCursor).toBeDefined();
       if (nextCursor) {
         const decodedNextCursor = decodeCursor(nextCursor);
-        expect(decodedNextCursor.idColumnValue).toBe(
+        expect(decodedNextCursor.cursorValues[ID_COLUMN]).toBe(
           mockItems.findLast((item) => item[ID_COLUMN])?.[ID_COLUMN],
         );
       }
+    });
+
+    it("should handle custom limit and direction parameters", async () => {
+      const mockItems = [{ id: "1", name: "Item 1" }];
+      const mockPaginatedQuery = createMockPaginatedQuery(mockItems, 5, true);
+      const mockLogger = createMockLogger();
+
+      const useCase = createPaginatedUseCase(
+        mockLogger,
+        mockPaginatedQuery,
+        (item) => item,
+      );
+
+      await useCase.paginatedUseCase(undefined, {
+        limit: 20,
+        direction: "prev",
+      });
+
+      expect(mockPaginatedQuery).toHaveBeenCalledWith(
+        expect.objectContaining({
+          limit: 20,
+          direction: "prev",
+        }),
+      );
     });
   });
 });

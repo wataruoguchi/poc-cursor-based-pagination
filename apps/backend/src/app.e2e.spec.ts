@@ -86,8 +86,7 @@ describe("app", () => {
         test("should return 200 with valid cursor", async () => {
           const LIMIT = 3;
           const cursor = encodeCursor({
-            idColumnName: "id",
-            idColumnValue: "",
+            cursorValues: {},
             orderBy: ["id"],
             limit: LIMIT,
             direction: "next",
@@ -104,11 +103,11 @@ describe("app", () => {
           } = resJson;
 
           const decodedPreviousCursor = decodeCursor(previousCursor);
-          expect(decodedPreviousCursor.idColumnValue).toEqual(
+          expect(decodedPreviousCursor.cursorValues.id).toEqual(
             sortedProducts[0].id,
           );
           const decodedNextCursor = decodeCursor(nextCursor);
-          expect(decodedNextCursor.idColumnValue).toEqual(
+          expect(decodedNextCursor.cursorValues.id).toEqual(
             sortedProducts[sortedProducts.slice(0, LIMIT).length - 1].id,
           );
 

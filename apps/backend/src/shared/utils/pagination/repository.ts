@@ -45,6 +45,8 @@ type StringTypeColumnName<T> = {
   [K in keyof T]: T[K] extends string ? K : never;
 }[keyof T];
 
+const EXTRA_ITEM_FOR_PAGINATION = 1;
+
 /**
  * A DEPENDENCY FOR REPOSITORIES.
  *
@@ -88,8 +90,10 @@ type StringTypeColumnName<T> = {
  *
  * ```ts
  * const { items, totalCount, hasMore } = createPaginatedQuery(query).withTextSearchableColumns(['id', 'name', 'email']).paginatedQuery({
- *   idColumnName: 'id',
- *   idColumnValue: null,
+ *   cursorValues: {
+ *     id: null,
+ *     created_at: null,
+ *   },
  *   orderBy: ['created_at', 'id'],
  *   direction: 'next',
  *   limit: 10,
@@ -168,16 +172,10 @@ function createPaginatedQueryFromQuery<
       hasMore: boolean;
     }> {
       // Apply filters
-      const {
-        idColumnName,
-        idColumnValue,
-        orderBy,
-        direction,
-        limit,
-        filters,
-      } = decodedCursor;
+      const { cursorValues, orderBy, direction, limit, filters } =
+        decodedCursor;
       logger.info(
-        { idColumnName, idColumnValue, orderBy, direction, limit, filters },
+        { cursorValues, orderBy, direction, limit, filters },
         "start paginatedQuery",
       );
 
@@ -214,16 +212,23 @@ function createPaginatedQueryFromQuery<
 
       // Build cursor query with WHERE conditions
       const cursorQuery =
-        isDefinedAndNotEmpty(idColumnValue) &&
-        isDefinedAndNotEmpty(idColumnName)
-          ? sortedQuery.where(sql.ref(idColumnName), comparison, idColumnValue)
+        cursorValues &&
+        Object.keys(cursorValues).length > 0 &&
+        orderBy.length > 0
+          ? buildCursorWhereCondition(
+              sortedQuery,
+              orderBy,
+              cursorValues,
+              comparison,
+            )
           : sortedQuery;
 
+      const mainQuery = cursorQuery
+        .limit(limit + EXTRA_ITEM_FOR_PAGINATION)
+        .selectAll(); // We want to know if there is more data to fetch. To do that, we need to fetch one more item than the limit.
+
       // Execute the main query with limit from cursor or default
-      const items = (await cursorQuery
-        .limit(limit + 1) // We want to know if there is more data to fetch. To do that, we need to fetch one more item than the limit.
-        .selectAll()
-        .execute()) as T[];
+      const items = (await mainQuery.execute()) as T[];
 
       const hasMore = items.length > limit;
       const paginatedItems = items.slice(0, limit);
@@ -240,6 +245,61 @@ function createPaginatedQueryFromQuery<
       };
     },
   };
+
+  function buildCursorWhereCondition(
+    query: SelectQueryBuilder<TDB, string, Record<string, unknown>>,
+    orderBy: string[],
+    cursorValues: Record<string, string | number | boolean | Date | null>,
+    comparison: ComparisonOperatorExpression,
+  ): SelectQueryBuilder<TDB, string, Record<string, unknown>> {
+    const columnValues = orderBy
+      .filter((columnName) => isDefinedAndNotEmpty(cursorValues[columnName]))
+      .map((columnName) => ({
+        column: columnName,
+        value: cursorValues[columnName],
+      }));
+
+    if (columnValues.length === 0) {
+      return query;
+    }
+
+    if (columnValues.length === 1) {
+      // Single column case
+      const { column, value } = columnValues[0];
+      return query.where(sql.ref(column), comparison, value);
+    }
+
+    // Multi-column case - build compound condition efficiently
+    // For [col1, col2, col3] and cursor (val1, val2, val3), build:
+    // (col1 > val1) OR (col1 = val1 AND col2 > val2) OR (col1 = val1 AND col2 = val2 AND col3 > val3)
+    return query.where((eb) => {
+      const conditions = [];
+      const accumulatedEqualityConditions: ReturnType<typeof eb>[] = [];
+
+      // Single pass through all columns - O(n) complexity
+      for (let i = 0; i < columnValues.length; i++) {
+        const { column, value } = columnValues[i];
+
+        // Add the comparison condition for the current column
+        const comparisonCondition = eb(sql.ref(column), comparison, value);
+
+        // Combine with accumulated equality conditions
+        if (accumulatedEqualityConditions.length > 0) {
+          conditions.push(
+            eb.and([...accumulatedEqualityConditions, comparisonCondition]),
+          );
+        } else {
+          conditions.push(comparisonCondition);
+        }
+
+        // Add current column's equality condition for next iteration
+        accumulatedEqualityConditions.push(eb(sql.ref(column), "=", value));
+      }
+
+      // @ts-ignore
+      return eb.or(conditions);
+    });
+  }
 }
 
 function isDefinedAndNotEmpty(value: string | number | boolean | Date | null) {
