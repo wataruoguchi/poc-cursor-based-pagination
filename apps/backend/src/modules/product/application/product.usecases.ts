@@ -2,7 +2,10 @@
  * This is where everything meets.
  */
 import type { Logger } from "@/infrastructure/logger";
-import { createPaginatedUseCase } from "@/shared/utils/pagination/usecase";
+import {
+  createPaginatedUseCase,
+  getDefaultCursorData,
+} from "@/shared/utils/pagination/usecase";
 import { productSchema, type Product } from "../domain/product.entity";
 import type { ProductRepository } from "../infrastructure/product.repository";
 
@@ -17,14 +20,12 @@ export const productUseCases = (
   shoppingCartRepository: ProductRepository,
   logger: Logger,
 ) => {
-  const defaultCursorData = {
-    cursorValues: {},
-    orderBy: ["created_at", "id"],
-    limit: 10,
-    direction: "next" as const,
-    filters: {},
-    timestamp: Date.now(),
-  };
+  // Type-safe default cursor data with column validation
+  const defaultCursorData = getDefaultCursorData<ProductRecord>([
+    "created_at",
+    "id",
+  ]);
+
   return {
     findProducts: async (): Promise<Product[]> => {
       logger.info("start findProducts");

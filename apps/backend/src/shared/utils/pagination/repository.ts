@@ -133,7 +133,7 @@ export function createPaginatedQuery<
 }
 
 export type PaginatedQuery<T extends BaseRecord> = (
-  decodedCursor: CursorData,
+  decodedCursor: CursorData<T>,
 ) => Promise<{
   items: T[];
   totalCount: number;

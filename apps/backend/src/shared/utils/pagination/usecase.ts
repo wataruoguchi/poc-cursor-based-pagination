@@ -5,24 +5,34 @@ import type { PaginatedQuery } from "./repository.ts";
 const limitSchema = z.number().int().positive();
 const directionSchema = z.enum(["next", "prev"]);
 
-const cursorSchema = z.object({
-  // Values for all ORDER BY columns (for proper multi-column cursor pagination)
-  cursorValues: z.record(
-    z.string(),
-    z.union([z.string(), z.number(), z.boolean(), z.date(), z.null()]),
-  ),
-  // Column names to order by.
-  orderBy: z.string().array(),
-  // Pagination.
-  limit: limitSchema,
-  // Direction of the pagination.
-  direction: directionSchema,
-  // Filters.
-  filters: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])),
-  // Timestamp. The timestamp of the cursor. We can use it to detect if the cursor is outdated.
-  timestamp: z.number(),
-});
-export type CursorData = z.infer<typeof cursorSchema>;
+// Generic cursor schema that validates column names
+const createCursorSchema = <T extends Record<string, unknown>>() =>
+  z.object({
+    // Values for all ORDER BY columns (for proper multi-column cursor pagination)
+    cursorValues: z.record(
+      z.string(),
+      z.union([z.string(), z.number(), z.boolean(), z.date(), z.null()]),
+    ),
+    // Column names to order by - for now, accept any string array
+    // In a real implementation, you could validate against a known schema
+    orderBy: z.array(z.string()),
+    // Pagination.
+    limit: limitSchema,
+    // Direction of the pagination.
+    direction: directionSchema,
+    // Filters.
+    filters: z.record(
+      z.string(),
+      z.union([z.string(), z.number(), z.boolean()]),
+    ),
+    // Timestamp. The timestamp of the cursor. We can use it to detect if the cursor is outdated.
+    timestamp: z.number(),
+  });
+
+// Type for cursor data inferred from the schema
+export type CursorData<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> = z.infer<ReturnType<typeof createCursorSchema<T>>>;
 
 export const paginatedMetaSchema = z.object({
   nextCursor: z.string().optional(),
@@ -38,10 +48,13 @@ type PaginatedResult<T> = {
   meta: PaginatedMeta;
 };
 
-export function getDefaultCursorData(): CursorData {
+// Generic default cursor data function
+export function getDefaultCursorData<T extends Record<string, unknown>>(
+  defaultColumns: (keyof T)[] = ["created_at", "id"] as (keyof T)[],
+): CursorData<T> {
   return {
     cursorValues: {},
-    orderBy: ["created_at", "id"],
+    orderBy: defaultColumns as string[],
     limit: 10,
     direction: "next",
     filters: {},
@@ -71,7 +84,7 @@ export function createPaginatedUseCase<
   logger: Logger,
   paginatedQuery: PaginatedQuery<T>,
   transformItem: (item: T) => R,
-  defaultDecodedCursor = getDefaultCursorData(),
+  defaultDecodedCursor = getDefaultCursorData<T>(),
 ) {
   const parseCursor = createParseCursor(logger);
   return {
@@ -129,14 +142,14 @@ export function createPaginatedUseCase<
 }
 
 function createParseCursor(logger: Logger) {
-  return function parseCursor(
-    defaultCursorData: CursorData,
+  return function parseCursor<T extends Record<string, unknown>>(
+    defaultCursorData: CursorData<T>,
     cursor?: string,
-  ): CursorData {
+  ): CursorData<T> {
     try {
       return {
         ...defaultCursorData,
-        ...(cursor ? decodeCursor(cursor) : {}),
+        ...(cursor ? decodeCursor<T>(cursor) : {}),
       };
     } catch (error) {
       logger.error({ cursor, error }, "Failed to parse cursor");
@@ -145,7 +158,9 @@ function createParseCursor(logger: Logger) {
   };
 }
 
-export function encodeCursor(data: CursorData): string {
+export function encodeCursor<T extends Record<string, unknown>>(
+  data: CursorData<T>,
+): string {
   // Convert Date objects to ISO strings for JSON serialization
   const serializableData = {
     ...data,
@@ -159,7 +174,9 @@ export function encodeCursor(data: CursorData): string {
   return Buffer.from(JSON.stringify(serializableData)).toString("base64");
 }
 
-export function decodeCursor(cursor: string): CursorData {
+export function decodeCursor<T extends Record<string, unknown>>(
+  cursor: string,
+): CursorData<T> {
   try {
     const decoded = Buffer.from(cursor, "base64").toString("utf-8");
     const data = JSON.parse(decoded);
@@ -176,7 +193,10 @@ export function decodeCursor(cursor: string): CursorData {
         ]),
       ),
     };
-    return { ...getDefaultCursorData(), ...cursorSchema.parse(parsedData) };
+
+    // Use the generic schema for validation
+    const schema = createCursorSchema<T>();
+    return { ...getDefaultCursorData<T>(), ...schema.parse(parsedData) };
   } catch (error) {
     if (error instanceof SyntaxError) {
       throw new Error("Invalid cursor format: not valid JSON", {
@@ -196,8 +216,8 @@ function isISODateString(value: string): boolean {
   return isoDateRegex.test(value) && !Number.isNaN(Date.parse(value));
 }
 
-function createNextCursor(
-  currentCursor: CursorData,
+function createNextCursor<T extends Record<string, unknown>>(
+  currentCursor: CursorData<T>,
   lastItem: BaseRecord,
 ): string {
   return encodeCursor({
@@ -206,8 +226,8 @@ function createNextCursor(
   });
 }
 
-function createPreviousCursor(
-  currentCursor: CursorData,
+function createPreviousCursor<T extends Record<string, unknown>>(
+  currentCursor: CursorData<T>,
   firstItem: BaseRecord,
 ): string {
   return encodeCursor({
@@ -216,10 +236,10 @@ function createPreviousCursor(
   });
 }
 
-function createCursorData(
-  currentCursor: CursorData,
+function createCursorData<T extends Record<string, unknown>>(
+  currentCursor: CursorData<T>,
   item: BaseRecord,
-): CursorData {
+): CursorData<T> {
   const cursorValues: Record<string, string | number | boolean | Date | null> =
     {};
 

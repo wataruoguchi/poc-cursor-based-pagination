@@ -2,36 +2,21 @@
 
 A flexible, type-safe cursor-based pagination system built with Kysely and TypeScript.
 
-## Overview
-
-This pagination module provides a clean, functional approach to implementing cursor-based pagination in your application. It supports:
+## Features
 
 - **Cursor-based pagination** with composite cursors
 - **Text search** with ILIKE queries
 - **Filtering** by exact values
 - **Bidirectional navigation** (next/previous)
 - **Type safety** with full TypeScript support
+- **Schema-driven types** with automatic synchronization
 - **Functional programming** style with testable modules
-
-## Architecture
-
-The module consists of two main components:
-
-### 1. Repository Layer (`repository.ts`)
-
-Handles the low-level database query building and execution.
-
-### 2. Use Case Layer (`usecase.ts`)
-
-Provides the high-level API for pagination operations, including cursor encoding/decoding.
 
 ## Quick Start
 
-### Basic Usage
-
 ```typescript
-import { createPaginatedQuery } from './repository.ts';
-import { createPaginatedUseCase } from './usecase.ts';
+import { createPaginatedQuery } from './repository';
+import { createPaginatedUseCase, getDefaultCursorData } from './usecase';
 import { createLogger } from '@/infrastructure/logger';
 
 const logger = createLogger('pagination');
@@ -39,18 +24,14 @@ const logger = createLogger('pagination');
 // 1. Create a paginated query
 const paginatedQuery = createPaginatedQuery(
   logger,
-  db.selectFrom('users'),
+  db.selectFrom('users')
 ).withTextSearchableColumns(['name', 'email']).paginatedQuery;
 
 // 2. Create a use case
 const useCase = createPaginatedUseCase(
   logger,
   paginatedQuery,
-  (user) => ({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-  })
+  (user) => ({ id: user.id, name: user.name, email: user.email })
 );
 
 // 3. Use pagination
@@ -60,81 +41,68 @@ const result = await useCase.paginatedUseCase();
 
 ## API Reference
 
-### Repository API
+### Repository Layer
 
 #### `createPaginatedQuery(logger, query)`
 
 Creates a paginated query builder.
 
-**Parameters:**
-
-- `logger`: Logger instance for logging operations
-- `query`: Kysely query builder (must not have orderBy, selectAll, limit, or execute clauses)
-
-**Returns:**
-
-- Object with `withTextSearchableColumns()` method
+```typescript
+const paginatedQuery = createPaginatedQuery(
+  logger,
+  db.selectFrom('users')
+).withTextSearchableColumns(['name', 'email']).paginatedQuery;
+```
 
 #### `withTextSearchableColumns(columns)`
 
 Configures which columns support text search (ILIKE).
 
-**Parameters:**
-
-- `columns`: Array of string column names that support text search
-
-**Returns:**
-
-- Object with `paginatedQuery()` method
-
 #### `paginatedQuery(cursorData)`
 
 Executes the paginated query.
 
-**Parameters:**
-
-- `cursorData`: CursorData object with pagination parameters
-
-**Returns:**
-
-- Promise resolving to `{ items: T[], totalCount: number, hasMore: boolean }`
-
-### Use Case API
+### Use Case Layer
 
 #### `createPaginatedUseCase(logger, paginatedQuery, transformItem, defaultCursor?)`
 
 Creates a pagination use case.
 
-**Parameters:**
+```typescript
+const useCase = createPaginatedUseCase(
+  logger,
+  paginatedQuery,
+  (user) => ({ id: user.id, name: user.name }),
+  getDefaultCursorData<UserTable>(['created_at', 'id'])
+);
+```
 
-- `logger`: Logger instance for logging operations
-- `paginatedQuery`: PaginatedQuery function from repository
-- `transformItem`: Function to transform database items to DTOs
-- `defaultCursor`: Optional default cursor configuration
+#### `paginatedUseCase(encodedCursor?, filters?)`
 
-**Returns:**
+Executes pagination with optional encoded cursor and filters.
 
-- Object with `paginatedUseCase()` method
+```typescript
+// First page
+const result = await useCase.paginatedUseCase();
 
-#### `paginatedUseCase(encodedCursor?)`
+// Next page
+const nextPage = await useCase.paginatedUseCase(result.meta.nextCursor);
 
-Executes pagination with optional encoded cursor.
-
-**Parameters:**
-
-- `encodedCursor`: Optional base64-encoded cursor string
-
-**Returns:**
-
-- Promise resolving to `{ data: R[], meta: PaginatedMeta }`
+// With custom filters
+const filtered = await useCase.paginatedUseCase(undefined, {
+  limit: 20,
+  direction: 'prev'
+});
+```
 
 ## Cursor Structure
 
-Cursors use a flexible column-based structure:
+Cursors use a flexible column-based structure with automatic type inference:
 
 ```typescript
-type CursorData = {
-  columns: Record<string, string | number | boolean | Date | null>;
+type CursorData<T> = {
+  cursorValues: Record<string, string | number | boolean | Date | null>;
+  orderBy: string[];
   limit: number;
   direction: 'next' | 'prev';
   filters: Record<string, string | number | boolean>;
@@ -145,10 +113,10 @@ type CursorData = {
 ### Examples
 
 #### Simple Cursor
-
 ```typescript
 {
-  columns: { id: '123' },
+  cursorValues: { id: '123' },
+  orderBy: ['id'],
   limit: 10,
   direction: 'next',
   filters: {},
@@ -157,13 +125,13 @@ type CursorData = {
 ```
 
 #### Composite Cursor
-
 ```typescript
 {
-  columns: {
+  cursorValues: {
     created_at: '2024-01-01T00:00:00Z',
     id: 'uuid-123'
   },
+  orderBy: ['created_at', 'id'],
   limit: 10,
   direction: 'next',
   filters: { is_active: true },
@@ -171,169 +139,109 @@ type CursorData = {
 }
 ```
 
-## Features
+## Type Safety
 
-### 1. Composite Cursors
+The module provides comprehensive TypeScript support:
 
-Support for multiple columns in cursors for deterministic ordering:
-
+### Generic Types
 ```typescript
-const cursor = {
-  columns: {
-    created_at: '2024-01-01T00:00:00Z',
-    id: 'uuid-123',
-  },
-  // ... other properties
+type UserTable = {
+  id: string;
+  name: string;
+  email: string;
+  created_at: Date;
+};
+
+// Type-safe cursor data
+const cursor: CursorData<UserTable> = {
+  cursorValues: { id: '123', created_at: new Date() },
+  orderBy: ['created_at', 'id'],
+  limit: 10,
+  direction: 'next',
+  filters: {},
+  timestamp: Date.now(),
 };
 ```
 
-### 2. Text Search
-
-Enable ILIKE search on string columns:
-
-```typescript
-const logger = createLogger('pagination');
-const paginatedQuery = createPaginatedQuery(
-  logger,
-  db.selectFrom('users'),
-).withTextSearchableColumns(['name', 'email']).paginatedQuery;
-
-// Use with filters
-const result = await paginatedQuery({
-  columns: { id: '' },
-  filters: { name: 'john', email: 'gmail' },
-  // ... other properties
-});
-```
-
-### 3. Exact Value Filtering
-
-Filter by exact values for non-string columns:
+### Schema-Driven Types
+Types are automatically inferred from Zod schemas using `z.infer`, ensuring they stay in sync:
 
 ```typescript
-const result = await paginatedQuery({
-  columns: { id: '' },
-  filters: {
-    age: 25,
-    is_active: true,
-    name: 'John', // Text search if name is in textSearchableColumns
-  },
-  // ... other properties
-});
+// The type automatically updates when the schema changes
+export type CursorData<T> = z.infer<ReturnType<typeof createCursorSchema<T>>>;
 ```
-
-### 4. Bidirectional Navigation
-
-Navigate both forward and backward:
-
-```typescript
-// Next page
-const nextPage = await useCase.paginatedUseCase(nextCursor);
-
-// Previous page
-const prevPage = await useCase.paginatedUseCase(prevCursor);
-```
-
-## Type Safety
-
-The module provides full TypeScript support with:
-
-- **Generic types** for table records
-- **Type inference** from Kysely query builders
-- **Compile-time validation** of searchable columns
-- **Type-safe cursor creation** and decoding
-- **Utility types** for extracting actual data types from Kysely table types
-- **Flexible database type support** allowing extended database schemas
 
 ### Utility Types
 
 #### `ExtractDataTypes<T>`
-
-Extracts actual runtime types from Kysely table types by removing the `Generated<T>` wrapper.
+Extracts actual runtime types from Kysely table types:
 
 ```typescript
-import { type ExtractDataTypes } from './repository.ts';
-
 type UserTable = {
   id: Generated<string>;
   name: string;
   age: Generated<number>;
-  created_at: Generated<Date>;
 };
 
 type UserData = ExtractDataTypes<UserTable>;
-// Result: { id: string; name: string; age: number; created_at: Date }
+// Result: { id: string; name: string; age: number; }
 ```
 
-### Example with Types
+## Usage Examples
 
+### Basic Pagination
 ```typescript
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  age: number;
-  created_at: Date;
-};
-
-type UserDTO = {
-  id: string;
-  name: string;
-  email: string;
-};
-
-const logger = createLogger('pagination');
-const paginatedQuery = createPaginatedQuery<User>(
+const useCase = createPaginatedUseCase(
   logger,
-  db.selectFrom('users'),
-).withTextSearchableColumns(['name', 'email']).paginatedQuery; // TypeScript validates these are string columns
+  createPaginatedQuery(logger, db.selectFrom('users'))
+    .withTextSearchableColumns(['name', 'email'])
+    .paginatedQuery,
+  (user) => ({ id: user.id, name: user.name, email: user.email })
+);
 
-const useCase = createPaginatedUseCase<User, UserDTO>(
+const result = await useCase.paginatedUseCase();
+```
+
+### With Custom Default Cursor
+```typescript
+const defaultCursor = getDefaultCursorData<UserTable>(['updated_at', 'id']);
+
+const useCase = createPaginatedUseCase(
   logger,
   paginatedQuery,
-  (user) => ({ id: user.id, name: user.name, email: user.email }),
+  transformItem,
+  defaultCursor
 );
 ```
 
-### Extended Database Types
-
-The module supports extended database types for testing and custom schemas:
-
+### With Filters
 ```typescript
-// Define extended database type for testing
-type TestDB = DB & {
-  test_table: {
-    sequential_id: Generated<number>;
-    uuid_id: Generated<string>;
-    created_at: Generated<Date>;
-    name: string;
-    age: number;
-    is_active: boolean;
-  };
-};
+// Text search
+const result = await useCase.paginatedUseCase(undefined, {
+  filters: { name: 'john', email: 'gmail' }
+});
 
-// Use with extended database type
-const db: Kysely<TestDB> = getTestDb();
-const paginatedQuery = createPaginatedQuery<TestTableData, TestDB>(
-  logger,
-  db.selectFrom('test_table'),
-).withTextSearchableColumns(['name']).paginatedQuery;
+// Exact value filtering
+const result = await useCase.paginatedUseCase(undefined, {
+  filters: { age: 25, is_active: true }
+});
+```
+
+### Bidirectional Navigation
+```typescript
+// Forward pagination
+const nextPage = await useCase.paginatedUseCase(nextCursor);
+
+// Backward pagination
+const prevPage = await useCase.paginatedUseCase(prevCursor);
 ```
 
 ## Testing
 
-The module is designed to be easily testable:
-
-- **No mocking required** for core functionality
-- **Functional composition** allows testing individual components
-- **Type safety** prevents runtime errors
-- **Comprehensive test suite** included
-- **Support for test database types** with extended schemas
-
-### Test Example
+The module is designed for easy testing:
 
 ```typescript
-import { createPaginatedQuery } from './repository.ts';
+import { createPaginatedQuery } from './repository';
 import { createLogger } from '@/infrastructure/logger';
 
 describe('Pagination', () => {
@@ -341,11 +249,12 @@ describe('Pagination', () => {
     const logger = createLogger('test');
     const paginatedQuery = createPaginatedQuery(
       logger,
-      db.selectFrom('users'),
+      db.selectFrom('users')
     ).withTextSearchableColumns(['name']).paginatedQuery;
 
     const result = await paginatedQuery({
-      columns: { id: '' },
+      cursorValues: { id: '' },
+      orderBy: ['id'],
       limit: 5,
       direction: 'next',
       filters: {},
@@ -361,52 +270,37 @@ describe('Pagination', () => {
 ## Best Practices
 
 ### 1. Column Selection
-
 - Use `created_at` or `updated_at` for natural chronological ordering
-- Include a unique identifier (like `id`) in composite cursors for deterministic ordering
-- Choose columns that have indexes for optimal performance
+- Include a unique identifier (like `id`) in composite cursors
+- Choose columns that have database indexes
+- Use type-safe cursor creation with proper column validation
 
-### 2. Cursor Management
-
-- Always validate cursor timestamps to detect stale cursors
-- Use appropriate limits (10-100 items typically)
-- Consider cursor expiration for security
-
-### 3. Performance
-
+### 2. Performance
 - Ensure cursor columns have database indexes
 - Use composite indexes for multi-column cursors
 - Monitor query performance with large datasets
 
-### 4. Error Handling
-
+### 3. Error Handling
 - Handle invalid cursor gracefully (module provides fallback to defaults)
 - Log cursor errors for debugging
 - Provide meaningful error messages to users
 
-### 5. Logging
+### 4. Type Safety
+- Use generic types for table records
+- Leverage schema-driven types for automatic synchronization
+- Define proper table types for extended databases
+- Use `ExtractDataTypes` utility for clean type extraction
 
-- Always provide a logger instance for proper observability
-- Use descriptive logger names for different modules
-- Log important pagination events for debugging
+## Architecture
 
-## Migration from Offset Pagination
+The module follows a layered architecture:
 
-If migrating from offset-based pagination:
+- **Repository Layer** (`repository.ts`): Low-level database query building
+- **Use Case Layer** (`usecase.ts`): High-level pagination operations with cursor management
+- **Schema-Driven Types**: Automatic type synchronization with Zod schemas
 
-1. **Update API endpoints** to accept cursor instead of page/offset
-2. **Modify frontend** to handle cursor-based navigation
-3. **Add database indexes** on cursor columns
-4. **Update documentation** to reflect new pagination behavior
-5. **Add logging** for pagination operations
-
-## Contributing
-
-When contributing to this module:
-
-1. **Maintain functional programming style**
-2. **Add comprehensive tests** for new features
-3. **Update documentation** for API changes
-4. **Ensure type safety** with TypeScript
-5. **Follow existing patterns** for consistency
-6. **Include proper logging** in all functions
+This design ensures:
+- **Separation of concerns** between database and business logic
+- **Testability** without complex mocking
+- **Type safety** throughout the stack
+- **Functional programming** principles
